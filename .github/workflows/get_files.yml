@@ -1,0 +1,99 @@
+name: get_files
+on:
+  workflow_dispatch:
+    inputs:
+      URL:
+        description: "待操作的系统包下载地址"
+        required: true
+      build_device:
+        description: "底包机型代号"
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: 1.准备环境
+        run: |
+          echo "date=$(echo ${{ github.event.inputs.URL }} | cut -d"/" -f4)" >> $GITHUB_ENV
+          sudo apt install python3 python3-pip aria2 zip p7zip-full tar zipalign zstd dos2unix
+          sudo apt --fix-broken install
+          sudo apt update --fix-missing
+          pip3 install --upgrade pip
+          pip3 install pycryptodome
+          pip3 install setuptools
+          pip3 install docopt
+          pip3 install requests
+          pip3 install beautifulsoup4
+          pip3 install --ignore-installed pyyaml
+      - name: 2.下载系统包
+        run: |
+          aria2c -x16 -j$(nproc) -U "Mozilla/5.0" -d "$GITHUB_WORKSPACE" ${{ github.event.inputs.URL }}
+      - name: 3.解包
+        run: |
+          sudo chmod 777 "$GITHUB_WORKSPACE"/tools/brotli
+          mkdir -p "$GITHUB_WORKSPACE"/"$device"
+          mkdir -p "$GITHUB_WORKSPACE"/images/TI_config
+          mkdir -p "$GITHUB_WORKSPACE"/get_a13_files
+          ORIGIN_ZIP_NAME=$(echo ${{ github.event.inputs.URL }} | cut -d"/" -f5)
+          md5sum "$GITHUB_WORKSPACE"/"$ORIGIN_ZIP_NAME"
+          for i in vendor; do
+              if [[ $i == mi_ext ]]; then
+                  if [[ "$(7z l "$ORIGIN_ZIP_NAME" | grep mi_ext)" == "" ]]; then
+                      break
+                  else
+                      touch "$GITHUB_WORKSPACE"/get_a13_files/has_mi_ext
+                  fi
+              fi
+              7z x "$GITHUB_WORKSPACE"/"$ORIGIN_ZIP_NAME" -o"$GITHUB_WORKSPACE"/"$device" $i.transfer.list
+              7z x "$GITHUB_WORKSPACE"/"$ORIGIN_ZIP_NAME" -o"$GITHUB_WORKSPACE"/"$device" $i.patch.dat
+              7z x "$GITHUB_WORKSPACE"/"$ORIGIN_ZIP_NAME" -o"$GITHUB_WORKSPACE"/"$device" $i.new.dat.br
+              "$GITHUB_WORKSPACE"/tools/brotli -d "$GITHUB_WORKSPACE"/"$device"/$i.new.dat.br
+              rm -rf "$GITHUB_WORKSPACE"/"$device"/$i.new.dat.br
+              python3 "$GITHUB_WORKSPACE"/tools/sdat2img.py "$GITHUB_WORKSPACE"/"$device"/$i.transfer.list "$GITHUB_WORKSPACE"/"$device"/$i.new.dat "$GITHUB_WORKSPACE"/"$device"/$i.img
+              rm -rf "$GITHUB_WORKSPACE"/"$device"/$i.patch.dat
+              rm -rf "$GITHUB_WORKSPACE"/"$device"/$i.transfer.list
+              rm -rf "$GITHUB_WORKSPACE"/"$device"/$i.new.dat
+              sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux.py "$GITHUB_WORKSPACE"/"$device"/$i.img "$GITHUB_WORKSPACE"/"$device"
+              rm -rf "$GITHUB_WORKSPACE"/"$device"/$i.img
+          done
+          rm -rf "$GITHUB_WORKSPACE"/"$ORIGIN_ZIP_NAME"
+        env:
+          device: ${{ github.event.inputs.build_device }}
+      - name: 4.提取指定文件
+        run: |
+          sudo cp -rf "$GITHUB_WORKSPACE"/"$device"/vendor/etc/audio_effects.conf "$GITHUB_WORKSPACE"/get_a13_files
+          sudo cp -rf "$GITHUB_WORKSPACE"/"$device"/vendor/etc/audio_effects.xml "$GITHUB_WORKSPACE"/get_a13_files
+          sudo cp -rf "$GITHUB_WORKSPACE"/"$device"/vendor/etc/audio_io_policy.conf "$GITHUB_WORKSPACE"/get_a13_files
+          sudo cp -rf "$GITHUB_WORKSPACE"/"$device"/vendor/etc/audio_policy_configuration.xml "$GITHUB_WORKSPACE"/get_a13_files
+          sudo cp -rf "$GITHUB_WORKSPACE"/"$device"/product/overlay/MiuiFrameworkResOverlay.apk "$GITHUB_WORKSPACE"/get_a13_files
+        env:
+          device: ${{ github.event.inputs.build_device }}
+      - name: 5.打包
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE"/zip
+          sudo chmod -R 777 "$GITHUB_WORKSPACE"/get_a13_files
+          7z a "$GITHUB_WORKSPACE"/zip/"$device"_get_a13_files.zip "$GITHUB_WORKSPACE"/get_a13_files/*
+          mv "$GITHUB_WORKSPACE"/zip/"$device"_get_a13_files.zip "$GITHUB_WORKSPACE"/zip/"$device"_"${{ env.date }}".zip
+          cd "$GITHUB_WORKSPACE"
+          touch file.log
+          echo ""$device"_"${{ env.date }}".zip" > file.log
+        env:
+          device: ${{ github.event.inputs.build_device }}
+      - name: 6.上传到Github Release
+        uses: ncipollo/release-action@main
+        with:
+          artifacts: ${{ github.workspace }}/zip/*
+          name: ${{ github.event.inputs.build_device }}_${{ env.date }}
+          tag: ${{ github.event.inputs.build_device }}_${{ env.date }}
+          bodyFile: "${{ github.workspace }}/file.log"
+          allowUpdates: true
+          artifactErrorsFailBuild: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: 7.删除工作流运行
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 0
+          keep_minimum_runs: 0
