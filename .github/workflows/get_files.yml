@@ -107,22 +107,22 @@ jobs:
         uses: actions/cache@main
         with:
           path: |
-            ${{ github.event.inputs.build_device }}
+            ${{ github.event.inputs.build_device }}_count
           key: ${{ github.event.inputs.build_device }}
       - if: ${{ steps.get-cache.outputs.cache-hit != 'true' }}
         name: 7.生成提取次数
         run: |
-          touch $GITHUB_WORKSPACE/${{ github.event.inputs.build_device }}
-          echo 1 > $GITHUB_WORKSPACE/${{ github.event.inputs.build_device }}
+          touch $GITHUB_WORKSPACE/${{ github.event.inputs.build_device }}_count
+          echo 1 > $GITHUB_WORKSPACE/${{ github.event.inputs.build_device }}_count
       - name: 8.打包
         run: |
           mkdir -p "$GITHUB_WORKSPACE"/zip
           sudo chmod -R 777 "$GITHUB_WORKSPACE"/get_files
           7z a "$GITHUB_WORKSPACE"/zip/"$device"_get_files.zip "$GITHUB_WORKSPACE"/get_files/*
-          number=$(cat $GITHUB_WORKSPACE/$device)
+          number=$(cat $GITHUB_WORKSPACE/"$device"_count)
           if [[ $number != 1 ]]; then
               ((number++))
-              echo $number >$GITHUB_WORKSPACE/$device
+              echo $number >$GITHUB_WORKSPACE/"$device"_count
           fi
           mv "$GITHUB_WORKSPACE"/zip/"$device"_get_files.zip "$GITHUB_WORKSPACE"/zip/"$device"_"${{ env.date }}"_"$number".zip
           cd "$GITHUB_WORKSPACE"
