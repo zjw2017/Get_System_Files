@@ -53,7 +53,7 @@ jobs:
               fi    
               rm -rf "$GITHUB_WORKSPACE"/images/$i.img
           done
-          rm -rf  "$GITHUB_WORKSPACE"/images/config "$GITHUB_WORKSPACE"/images/TI_config "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/payload.bin
+          sudo rm -rf  "$GITHUB_WORKSPACE"/images/config "$GITHUB_WORKSPACE"/images/TI_config "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/payload.bin
           sudo mv "$GITHUB_WORKSPACE"/images "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}
       - if: ${{ env.unpack == 'br' }}
         name: 4.解压br
@@ -78,7 +78,7 @@ jobs:
               fi
               rm -rf "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/$i.img
           done
-          rm -rf "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/TI_config "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/config
+          sudo rm -rf "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/TI_config "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/config
       - name: 5.提取指定文件
         run: |
           for i in system odm system_ext product vendor; do
