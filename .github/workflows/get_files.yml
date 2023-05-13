@@ -5,9 +5,6 @@ on:
       URL:
         description: "待操作的系统包下载地址"
         required: true
-      build_device:
-        description: "底包机型代号"
-        required: true
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,6 +13,8 @@ jobs:
       - name: 1.准备环境
         run: |
           echo "date=$(echo ${{ github.event.inputs.URL }} | cut -d"/" -f4)" >> $GITHUB_ENV
+          device=$(echo ${{ github.event.inputs.URL }} | cut -d"_" -f2)
+          echo "device=$(echo ${device,,}" >> $GITHUB_ENV
           sudo apt install python3 python3-pip aria2 zip p7zip-full tar zipalign zstd dos2unix
           sudo apt --fix-broken install
           sudo apt update --fix-missing
@@ -34,8 +33,8 @@ jobs:
       - name: 3.检测payload/br
         run: |
           ZIP_NAME=$(echo ${{ github.event.inputs.URL }} | cut -d"/" -f5)
-          7z x "$GITHUB_WORKSPACE"/$ZIP_NAME -r -o"$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }} && rm -rf "$GITHUB_WORKSPACE"/$ZIP_NAME
-          if [[ -e "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/payload.bin ]]; then
+          7z x "$GITHUB_WORKSPACE"/$ZIP_NAME -r -o"$GITHUB_WORKSPACE"/${{ env.device }} && rm -rf "$GITHUB_WORKSPACE"/$ZIP_NAME
+          if [[ -e "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin ]]; then
               echo "unpack=payload" >> $GITHUB_ENV
           else
               echo "unpack=br" >> $GITHUB_ENV
@@ -45,7 +44,7 @@ jobs:
         run: |
           mkdir -p "$GITHUB_WORKSPACE"/images
           for i in vendor odm system product system_ext mi_ext; do
-              "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/images/ -p $i "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/payload.bin
+              "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/images/ -p $i "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin
               if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/images/$i.img) == "ext" ]]; then
                   sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/images/$i.img "$GITHUB_WORKSPACE"/images
               elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/images/$i.img) == "erofs" ]]; then
@@ -53,32 +52,32 @@ jobs:
               fi    
               rm -rf "$GITHUB_WORKSPACE"/images/$i.img
           done
-          sudo rm -rf  "$GITHUB_WORKSPACE"/images/config "$GITHUB_WORKSPACE"/images/TI_config "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/payload.bin
-          sudo mv "$GITHUB_WORKSPACE"/images "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}
+          sudo rm -rf  "$GITHUB_WORKSPACE"/images/config "$GITHUB_WORKSPACE"/images/TI_config "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin
+          sudo mv "$GITHUB_WORKSPACE"/images "$GITHUB_WORKSPACE"/${{ env.device }}
       - if: ${{ env.unpack == 'br' }}
         name: 4.解压br
         run: |
           for i in system odm system_ext product vendor mi_ext; do
               if [[ $i == mi_ext ]]; then
-                  if [ -e "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/mi_ext.dat.br ]; then
+                  if [ -e "$GITHUB_WORKSPACE"/${{ env.device }}/mi_ext.dat.br ]; then
                       echo "has_mi_ext=true" >> $GITHUB_ENV
                   else
                       echo "has_mi_ext=false" >> $GITHUB_ENV
                       break
                   fi
               fi
-              "$GITHUB_WORKSPACE"/tools/brotli -d "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/$i.new.dat.br
-              rm -rf "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/$i.new.dat.br
-              python3 "$GITHUB_WORKSPACE"/tools/sdat2img.py "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/$i.transfer.list "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/$i.new.dat "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/$i.img
-              rm -rf "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/$i.patch.dat "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/$i.transfer.list "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/$i.new.dat
-              if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/$i.img) == "ext" ]]; then
-                  sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/$i.img "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}
-              elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/$i.img) == "erofs" ]]; then
-                  cd "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }} && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/$i.img -x && cd "$GITHUB_WORKSPACE"
+              "$GITHUB_WORKSPACE"/tools/brotli -d "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat.br
+              rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat.br
+              python3 "$GITHUB_WORKSPACE"/tools/sdat2img.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.transfer.list "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
+              rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.patch.dat "$GITHUB_WORKSPACE"/${{ env.device }}/$i.transfer.list "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat
+              if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "ext" ]]; then
+                  sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }}
+              elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "erofs" ]]; then
+                  cd "$GITHUB_WORKSPACE"/${{ env.device }} && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img -x && cd "$GITHUB_WORKSPACE"
               fi
-              rm -rf "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/$i.img
+              rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
           done
-          sudo rm -rf "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/TI_config "$GITHUB_WORKSPACE"/${{ github.event.inputs.build_device }}/config
+          sudo rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/TI_config "$GITHUB_WORKSPACE"/${{ env.device }}/config
       - name: 5.提取指定文件
         run: |
           for i in system odm system_ext product vendor; do
@@ -101,19 +100,19 @@ jobs:
           sudo cp -rf "$GITHUB_WORKSPACE"/"$device"/product/etc/device_features/"$device".xml "$GITHUB_WORKSPACE"/get_files
           sudo cp -rf "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiCit/MiuiCit.apk "$GITHUB_WORKSPACE"/get_files
         env:
-          device: ${{ github.event.inputs.build_device }}
+          device: ${{ env.device }}
       - name: 6.查询提取次数
         id: get-cache
         uses: actions/cache@main
         with:
           path: |
-            ${{ github.event.inputs.build_device }}_count
-          key: ${{ github.event.inputs.build_device }}
+            ${{ env.device }}_count
+          key: ${{ env.device }}
       - if: ${{ steps.get-cache.outputs.cache-hit != 'true' }}
         name: 7.生成提取次数
         run: |
-          touch $GITHUB_WORKSPACE/${{ github.event.inputs.build_device }}_count
-          echo 1 > $GITHUB_WORKSPACE/${{ github.event.inputs.build_device }}_count
+          touch $GITHUB_WORKSPACE/${{ env.device }}_count
+          echo 1 > $GITHUB_WORKSPACE/${{ env.device }}_count
       - name: 8.打包
         run: |
           mkdir -p "$GITHUB_WORKSPACE"/zip
@@ -129,13 +128,13 @@ jobs:
           touch file.log
           echo ""$device"_"${{ env.date }}"_"$number".zip" > file.log
         env:
-          device: ${{ github.event.inputs.build_device }}
+          device: ${{ env.device }}
       - name: 9.上传到Github Release
         uses: ncipollo/release-action@main
         with:
           artifacts: ${{ github.workspace }}/zip/*
-          name: ${{ github.event.inputs.build_device }}_all
-          tag: ${{ github.event.inputs.build_device }}_all
+          name: ${{ env.device }}_all
+          tag: ${{ env.device }}_all
           bodyFile: "${{ github.workspace }}/file.log"
           allowUpdates: true
           artifactErrorsFailBuild: true
