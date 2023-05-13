@@ -13,8 +13,8 @@ jobs:
       - name: 1.准备环境
         run: |
           echo "date=$(echo ${{ github.event.inputs.URL }} | cut -d"/" -f4)" >> $GITHUB_ENV
-          device=$(echo ${{ github.event.inputs.URL }} | cut -d"_" -f2)
-          echo "device=$(echo ${device,,}" >> $GITHUB_ENV
+          device1=$(echo ${{ github.event.inputs.URL }} | cut -d"_" -f2)
+          echo "device=$(echo ${device1,,}" >> $GITHUB_ENV
           sudo apt install python3 python3-pip aria2 zip p7zip-full tar zipalign zstd dos2unix
           sudo apt --fix-broken install
           sudo apt update --fix-missing
@@ -139,10 +139,3 @@ jobs:
           allowUpdates: true
           artifactErrorsFailBuild: true
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: 10.删除工作流运行
-        uses: Mattraks/delete-workflow-runs@v2
-        with:
-          token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          retain_days: 0
-          keep_minimum_runs: 0
