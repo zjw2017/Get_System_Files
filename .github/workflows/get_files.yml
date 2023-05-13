@@ -117,6 +117,7 @@ jobs:
         run: |
           touch $GITHUB_WORKSPACE/${{ env.device }}_count
           echo 1 > $GITHUB_WORKSPACE/${{ env.device }}_count
+          echo "number=1"  >> $GITHUB_ENV
       - name: 8.打包
         run: |
           mkdir -p "$GITHUB_WORKSPACE"/zip
@@ -126,6 +127,7 @@ jobs:
           if [[ $number != 1 ]]; then
               ((number++))
               echo $number >$GITHUB_WORKSPACE/"$device"_count
+              echo "number=$number"  >> $GITHUB_ENV
           fi
           mv "$GITHUB_WORKSPACE"/zip/"$device"_get_files.zip "$GITHUB_WORKSPACE"/zip/"$device"_"${{ env.date }}"_"$number".zip
           cd "$GITHUB_WORKSPACE"
@@ -147,9 +149,9 @@ jobs:
         run: |
           number=$(cat $GITHUB_WORKSPACE/"$device"_count)
           if [[ "${{ env.device }}" == "umi" ]]; then
-              curl -i -X POST -H 'Content-type':'application/json' -d '{"token":"${{ secrets.appToken }}","title":"小米10 ${{ env.date }}_$number 已完成提取","content":" **本次提取文件为：${{ env.info }}** ","topic":"get_system_files","template":"markdown"}' http://www.pushplus.plus/send || true
+              curl -i -X POST -H 'Content-type':'application/json' -d '{"token":"${{ secrets.appToken }}","title":"小米10 ${{ env.date }}_${{ env.number }} 已完成提取","content":" **本次提取文件为：${{ github.event.inputs.info }}** ","topic":"get_system_files","template":"markdown"}' http://www.pushplus.plus/send || true
           elif [[ "${{ env.device }}" == "cmi" ]]; then
-              curl -i -X POST -H 'Content-type':'application/json' -d '{"token":"${{ secrets.appToken }}","title":"小米10Pro ${{ env.date }}_$number 已完成提取","content":" **本次提取文件为：${{ env.info }}** ","topic":"get_system_files","template":"markdown"}' http://www.pushplus.plus/send || true
+              curl -i -X POST -H 'Content-type':'application/json' -d '{"token":"${{ secrets.appToken }}","title":"小米10Pro ${{ env.date }}_${{ env.number }} 已完成提取","content":" **本次提取文件为：${{ github.event.inputs.info }}** ","topic":"get_system_files","template":"markdown"}' http://www.pushplus.plus/send || true
           elif [[ "${{ env.device }}" == "cas" ]]; then
-              curl -i -X POST -H 'Content-type':'application/json' -d '{"token":"${{ secrets.appToken }}","title":"小米10 Ultra ${{ env.date }}_$number 已完成提取","content":" **本次提取文件为：${{ env.info }}** ","topic":"get_system_files","template":"markdown"}' http://www.pushplus.plus/send || true
+              curl -i -X POST -H 'Content-type':'application/json' -d '{"token":"${{ secrets.appToken }}","title":"小米10 Ultra ${{ env.date }}_${{ env.number }} 已完成提取","content":" **本次提取文件为：${{ github.event.inputs.info }}** ","topic":"get_system_files","template":"markdown"}' http://www.pushplus.plus/send || true
           fi
