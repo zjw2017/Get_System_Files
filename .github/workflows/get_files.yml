@@ -58,6 +58,7 @@ jobs:
           done
           sudo rm -rf  "$GITHUB_WORKSPACE"/images/config "$GITHUB_WORKSPACE"/images/TI_config "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin
           sudo mv "$GITHUB_WORKSPACE"/images "$GITHUB_WORKSPACE"/${{ env.device }}
+          ls -l "$GITHUB_WORKSPACE"/${{ env.device }}
       - if: ${{ env.unpack == 'br' }}
         name: 4.解压br
         run: |
