@@ -46,19 +46,16 @@ jobs:
       - if: ${{ env.unpack == 'payload' }}
         name: 4.解压payload
         run: |
-          mkdir -p "$GITHUB_WORKSPACE"/images
           for i in vendor odm system product system_ext mi_ext; do
-              "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/images/ -p $i "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin
-              if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/images/$i.img) == "ext" ]]; then
-                  sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/images/$i.img "$GITHUB_WORKSPACE"/images
-              elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/images/$i.img) == "erofs" ]]; then
-                  cd "$GITHUB_WORKSPACE"/images && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/images/$i.img -x && cd "$GITHUB_WORKSPACE"
+              "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/${{ env.device }}/ -p $i "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin
+              if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "ext" ]]; then
+                  sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }}
+              elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "erofs" ]]; then
+                  cd "$GITHUB_WORKSPACE"/${{ env.device }} && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img -x && cd "$GITHUB_WORKSPACE"
               fi    
-              rm -rf "$GITHUB_WORKSPACE"/images/$i.img
+              rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
           done
-          sudo rm -rf  "$GITHUB_WORKSPACE"/images/config "$GITHUB_WORKSPACE"/images/TI_config "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin
-          ls -l "$GITHUB_WORKSPACE"/images
-          ls -l "$GITHUB_WORKSPACE"/${{ env.device }}
+          sudo rm -rf  "$GITHUB_WORKSPACE"/${{ env.device }}/config "$GITHUB_WORKSPACE"/${{ env.device }}/TI_config "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin
       - if: ${{ env.unpack == 'br' }}
         name: 4.解压br
         run: |
