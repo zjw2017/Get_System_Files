@@ -120,15 +120,15 @@ jobs:
           mv "$GITHUB_WORKSPACE"/zip/"$device"_get_files.zip "$GITHUB_WORKSPACE"/zip/"$device"_"${{ env.date }}"_"$number".zip
           cd "$GITHUB_WORKSPACE"
           touch file.log
-          echo ""$device"_"${{ env.date }}"_"$number".zip" > file.log
+          echo "${{ github.event.inputs.info }}" > file.log
         env:
           device: ${{ env.device }}
       - name: 9.上传到Github Release
         uses: ncipollo/release-action@main
         with:
           artifacts: ${{ github.workspace }}/zip/*
-          name: ${{ env.device }}_all
-          tag: ${{ env.device }}_all
+          name: ${{ env.device }}
+          tag: ${{ env.device }}
           bodyFile: "${{ github.workspace }}/file.log"
           allowUpdates: true
           artifactErrorsFailBuild: true
