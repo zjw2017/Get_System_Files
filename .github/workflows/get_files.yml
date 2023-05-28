@@ -91,7 +91,8 @@ jobs:
               mi_ext_build_prop=$(sudo find "$GITHUB_WORKSPACE"/"$device"/mi_ext -name "build.prop")
               sudo cp -f "$mi_ext_build_prop" "$GITHUB_WORKSPACE"/get_files/mi_ext
           fi
-          sudo cp -rf "$GITHUB_WORKSPACE"/"$device"/product/app/AiasstVision* "$GITHUB_WORKSPACE"/get_files/app
+          mkdir -p "$GITHUB_WORKSPACE"/get_files/app
+          sudo cp -rf "$GITHUB_WORKSPACE"/"$device"/*/*/AiasstVision* "$GITHUB_WORKSPACE"/get_files/app
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system/system/build.prop "$GITHUB_WORKSPACE"/get_files/system
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/vendor/build.prop "$GITHUB_WORKSPACE"/get_files/vendor
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system_ext/etc/build.prop "$GITHUB_WORKSPACE"/get_files/system_ext
