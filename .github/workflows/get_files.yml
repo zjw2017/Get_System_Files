@@ -85,7 +85,6 @@ jobs:
           for i in system odm system_ext product vendor; do
               mkdir -p "$GITHUB_WORKSPACE"/get_files/$i
           done
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/displayconfig/*.xml "$GITHUB_WORKSPACE"/get_files/product
           if [[ "${{ env.has_mi_ext }}" == "true" ]]; then
               mkdir -p "$GITHUB_WORKSPACE"/get_files/mi_ext
               mi_ext_build_prop=$(sudo find "$GITHUB_WORKSPACE"/"$device"/mi_ext -name "build.prop")
@@ -95,6 +94,7 @@ jobs:
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/vendor/build.prop "$GITHUB_WORKSPACE"/get_files/vendor
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system_ext/etc/build.prop "$GITHUB_WORKSPACE"/get_files/system_ext
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/odm/etc/build.prop "$GITHUB_WORKSPACE"/get_files/odm
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/build.prop "$GITHUB_WORKSPACE"/get_files/odm
         env:
           device: ${{ env.device }}
       - name: 6.查询提取次数
