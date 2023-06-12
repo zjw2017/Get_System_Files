@@ -94,7 +94,7 @@ jobs:
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/vendor/build.prop "$GITHUB_WORKSPACE"/get_files/vendor
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system_ext/etc/build.prop "$GITHUB_WORKSPACE"/get_files/system_ext
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/odm/etc/build.prop "$GITHUB_WORKSPACE"/get_files/odm
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/build.prop "$GITHUB_WORKSPACE"/get_files/odm
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/build.prop "$GITHUB_WORKSPACE"/get_files/product
         env:
           device: ${{ env.device }}
       - name: 6.查询提取次数
