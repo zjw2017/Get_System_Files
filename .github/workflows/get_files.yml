@@ -91,20 +91,10 @@ jobs:
               mi_ext_build_prop=$(sudo find "$GITHUB_WORKSPACE"/"$device"/mi_ext -name "build.prop")
               sudo cp -f "$mi_ext_build_prop" "$GITHUB_WORKSPACE"/get_files/mi_ext
           fi
-
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system/system/build.prop "$GITHUB_WORKSPACE"/get_files/system
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/vendor/build.prop "$GITHUB_WORKSPACE"/get_files/vendor
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system_ext/etc/build.prop "$GITHUB_WORKSPACE"/get_files/system_ext
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/etc-product.zip "$GITHUB_WORKSPACE"/"$device"/product/etc
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/odm/etc/build.prop "$GITHUB_WORKSPACE"/get_files/odm
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system_ext/framework/framework-ext-res/framework-ext-res.apk "$GITHUB_WORKSPACE"/get_files/system_ext
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/selinux.zip "$GITHUB_WORKSPACE"/"$device"/vendor/etc/selinux
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/etc.zip "$GITHUB_WORKSPACE"/"$device"/vendor/etc/
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/overlay.zip "$GITHUB_WORKSPACE"/"$device"/product/overlay/*
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/pangu.zip "$GITHUB_WORKSPACE"/"$device"/product/pangu/
-          sudo cp -rf "$GITHUB_WORKSPACE"/"$device"/product/etc/device_features/"$device".xml "$GITHUB_WORKSPACE"/get_files
-          sudo ls -l "$GITHUB_WORKSPACE"/"$device"/product/app/
-          sudo cp -rf "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiCit/MiuiCit.apk "$GITHUB_WORKSPACE"/get_files
         env:
           device: ${{ env.device }}
       - name: 6.查询提取次数
