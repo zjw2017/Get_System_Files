@@ -105,7 +105,7 @@ jobs:
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/SettingsRroDeviceTypeOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
           sudo 7z a "$GITHUB_WORKSPACE"/get_files/overlay.zip "$GITHUB_WORKSPACE"/"$device"/product/overlay/*
           sudo rm -rf "$GITHUB_WORKSPACE"/get_files/product/overlay
-          sudo cp -f "$GITHUB_WORKSPACE"/images/product/priv-app/MiuiCamera/MiuiCamera.apk "$GITHUB_WORKSPACE"/get_files
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/priv-app/MiuiCamera/MiuiCamera.apk "$GITHUB_WORKSPACE"/get_files
           split -b 50M -d "$GITHUB_WORKSPACE"/get_files/MiuiCamera.apk MiuiCamera.
           rm -rf "$GITHUB_WORKSPACE"/get_files/MiuiCamera.apk
           sudo 7z a "$GITHUB_WORKSPACE"/get_files/MiuiBiometric3389.zip "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiBiometric3389
