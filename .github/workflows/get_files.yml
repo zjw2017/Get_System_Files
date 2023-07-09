@@ -90,27 +90,7 @@ jobs:
               mi_ext_build_prop=$(sudo find "$GITHUB_WORKSPACE"/"$device"/mi_ext -name "build.prop")
               sudo cp -f "$mi_ext_build_prop" "$GITHUB_WORKSPACE"/get_files/mi_ext
           fi
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system/system/build.prop "$GITHUB_WORKSPACE"/get_files/system
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/vendor/build.prop "$GITHUB_WORKSPACE"/get_files/vendor
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system_ext/etc/build.prop "$GITHUB_WORKSPACE"/get_files/system_ext
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/odm/etc/build.prop "$GITHUB_WORKSPACE"/get_files/odm
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/build.prop "$GITHUB_WORKSPACE"/get_files/product
-          mkdir -p "$GITHUB_WORKSPACE"/get_files/product/overlay
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/AospFrameworkResOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/AospWifiResOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/DevicesAndroidOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/DevicesOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/MiuiFrameworkResOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/SettingsRroDeviceHideStatusBarOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/SettingsRroDeviceTypeOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/overlay.zip "$GITHUB_WORKSPACE"/"$device"/product/overlay/*
-          sudo rm -rf "$GITHUB_WORKSPACE"/get_files/product/overlay
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/priv-app/MiuiCamera/MiuiCamera.apk "$GITHUB_WORKSPACE"/get_files
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/MiuiBiometric3389.zip "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiBiometric3389
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/pangu.zip "$GITHUB_WORKSPACE"/"$device"/product/pangu/system
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/device_features/venus.xml "$GITHUB_WORKSPACE"/get_files || true
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiCit/MiuiCit.apk "$GITHUB_WORKSPACE"/get_files
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/lights.zip "$GITHUB_WORKSPACE"/"$device"/product/etc/displayconfig/*
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system/system/priv-app/TeleService/TeleService.apk "$GITHUB_WORKSPACE"/get_files
         env:
           device: ${{ env.device }}
       - name: 6.查询提取次数
