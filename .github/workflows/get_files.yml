@@ -87,14 +87,23 @@ jobs:
               mi_ext_build_prop=$(sudo find "$GITHUB_WORKSPACE"/"$device"/mi_ext -name "build.prop")
           fi
           mkdir -p "$GITHUB_WORKSPACE"/get_files/product
+          echo 提取小爱翻译
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/app/AiasstVision_L2/AiasstVision_L2.apk "$GITHUB_WORKSPACE"/get_files/product
+          echo 提取亮度
           sudo 7z a "$GITHUB_WORKSPACE"/get_files/lights.zip "$GITHUB_WORKSPACE"/"$device"/product/etc/displayconfig/*
+          echo 提取音质音效
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/app/MiSound/MiSound.apk "$GITHUB_WORKSPACE"/get_files/product
+          echo 提取面容
           sudo 7z a "$GITHUB_WORKSPACE"/get_files/MiuiBiometric3389.zip "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiBiometric3389
+          echo 提取相机
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/priv-app/MiuiCamera/MiuiCamera.apk "$GITHUB_WORKSPACE"/get_files
+          ls -l "$GITHUB_WORKSPACE"/get_files/
           split -b 50M -d "$GITHUB_WORKSPACE"/get_files/MiuiCamera.apk MiuiCamera.
+          ls -l "$GITHUB_WORKSPACE"/get_files/
           rm -rf "$GITHUB_WORKSPACE"/get_files/MiuiCamera.apk
+          echo 提取Cit
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiCit/MiuiCit.apk "$GITHUB_WORKSPACE"/get_files
+          echo 提取pangu
           sudo 7z a "$GITHUB_WORKSPACE"/get_files/pangu.zip "$GITHUB_WORKSPACE"/"$device"/product/pangu/system
         env:
           device: ${{ env.device }}
