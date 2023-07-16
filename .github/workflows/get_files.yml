@@ -98,7 +98,7 @@ jobs:
           echo 提取相机
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/priv-app/MiuiCamera/MiuiCamera.apk "$GITHUB_WORKSPACE"/get_files
           ls -l "$GITHUB_WORKSPACE"/get_files/
-          split -b 50M -d "$GITHUB_WORKSPACE"/get_files/MiuiCamera.apk MiuiCamera.
+          split -b 50M -d "$GITHUB_WORKSPACE"/get_files/MiuiCamera.apk "$GITHUB_WORKSPACE"/get_files/MiuiCamera.
           ls -l "$GITHUB_WORKSPACE"/get_files/
           rm -rf "$GITHUB_WORKSPACE"/get_files/MiuiCamera.apk
           echo 提取Cit
