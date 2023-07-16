@@ -89,7 +89,7 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE"/get_files/product
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/app/AiasstVision_L2/AiasstVision_L2.apk "$GITHUB_WORKSPACE"/get_files/product
           sudo 7z a "$GITHUB_WORKSPACE"/get_files/lights.zip "$GITHUB_WORKSPACE"/"$device"/product/etc/displayconfig/*
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/priv-app/MiSound/MiSound.apk "$GITHUB_WORKSPACE"/get_files/product
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/app/MiSound/MiSound.apk "$GITHUB_WORKSPACE"/get_files/product
           sudo 7z a "$GITHUB_WORKSPACE"/get_files/MiuiBiometric3389.zip "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiBiometric3389
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/priv-app/MiuiCamera/MiuiCamera.apk "$GITHUB_WORKSPACE"/get_files
           split -b 50M -d "$GITHUB_WORKSPACE"/get_files/MiuiCamera.apk MiuiCamera.
