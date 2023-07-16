@@ -51,8 +51,7 @@ jobs:
               if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "ext" ]]; then
                   sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }}
               elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "erofs" ]]; then
-                  mkdir -p "$GITHUB_WORKSPACE"/${{ env.device }}/$i
-                  sudo mount -t erofs -o ro "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }}/$i
+                  cd "$GITHUB_WORKSPACE"/${{ env.device }} && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img -x && cd "$GITHUB_WORKSPACE"
               fi
               rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
           done
@@ -76,8 +75,7 @@ jobs:
               if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "ext" ]]; then
                   sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }}
               elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "erofs" ]]; then
-                  mkdir -p "$GITHUB_WORKSPACE"/${{ env.device }}/$i
-                  sudo mount -t erofs -o ro "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }}/$i
+                  cd "$GITHUB_WORKSPACE"/${{ env.device }} && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img -x && cd "$GITHUB_WORKSPACE"
               fi
               rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
           done
