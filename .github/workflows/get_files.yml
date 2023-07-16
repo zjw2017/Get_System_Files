@@ -51,8 +51,9 @@ jobs:
               if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "ext" ]]; then
                   sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }}
               elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "erofs" ]]; then
-                  cd "$GITHUB_WORKSPACE"/${{ env.device }} && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img -x && cd "$GITHUB_WORKSPACE"
-              fi    
+                  mkdir -p "$GITHUB_WORKSPACE"/${{ env.device }}/$i
+                  sudo mount -t erofs -o ro "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }}/$i
+              fi
               rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
           done
           sudo rm -rf  "$GITHUB_WORKSPACE"/${{ env.device }}/config "$GITHUB_WORKSPACE"/${{ env.device }}/TI_config "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin
@@ -75,22 +76,28 @@ jobs:
               if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "ext" ]]; then
                   sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }}
               elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "erofs" ]]; then
-                  cd "$GITHUB_WORKSPACE"/${{ env.device }} && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img -x && cd "$GITHUB_WORKSPACE"
+                  mkdir -p "$GITHUB_WORKSPACE"/${{ env.device }}/$i
+                  sudo mount -t erofs -o ro "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }}/$i
               fi
               rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
           done
           sudo rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/TI_config "$GITHUB_WORKSPACE"/${{ env.device }}/config
       - name: 5.提取指定文件
         run: |
-          for i in system odm system_ext product vendor; do
-              mkdir -p "$GITHUB_WORKSPACE"/get_files/$i
-          done
           if [[ "${{ env.has_mi_ext }}" == "true" ]]; then
               mkdir -p "$GITHUB_WORKSPACE"/get_files/mi_ext
               mi_ext_build_prop=$(sudo find "$GITHUB_WORKSPACE"/"$device"/mi_ext -name "build.prop")
-              sudo cp -f "$mi_ext_build_prop" "$GITHUB_WORKSPACE"/get_files/mi_ext
           fi
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system/system/priv-app/TeleService/TeleService.apk "$GITHUB_WORKSPACE"/get_files
+          mkdir -p "$GITHUB_WORKSPACE"/get_files/product
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/app/AiasstVision_L2/AiasstVision_L2.apk "$GITHUB_WORKSPACE"/get_files/product
+          sudo 7z a "$GITHUB_WORKSPACE"/get_files/lights.zip "$GITHUB_WORKSPACE"/"$device"/product/etc/displayconfig/*
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/priv-app/MiSound/MiSound.apk "$GITHUB_WORKSPACE"/get_files/product
+          sudo 7z a "$GITHUB_WORKSPACE"/get_files/MiuiBiometric3389.zip "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiBiometric3389
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/priv-app/MiuiCamera/MiuiCamera.apk "$GITHUB_WORKSPACE"/get_files
+          split -b 50M -d "$GITHUB_WORKSPACE"/get_files/MiuiCamera.apk MiuiCamera.
+          rm -rf "$GITHUB_WORKSPACE"/get_files/MiuiCamera.apk
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiCit/MiuiCit.apk "$GITHUB_WORKSPACE"/get_files
+          sudo 7z a "$GITHUB_WORKSPACE"/get_files/pangu.zip "$GITHUB_WORKSPACE"/"$device"/product/pangu/system
         env:
           device: ${{ env.device }}
       - name: 6.查询提取次数
