@@ -86,24 +86,16 @@ jobs:
               mkdir -p "$GITHUB_WORKSPACE"/get_files/mi_ext
               mi_ext_build_prop=$(sudo find "$GITHUB_WORKSPACE"/"$device"/mi_ext -name "build.prop")
           fi
-          echo 提取小爱翻译
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/app/AiasstVision_L2/AiasstVision_L2.apk "$GITHUB_WORKSPACE"/get_files
-          echo 提取亮度
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/lights.zip "$GITHUB_WORKSPACE"/"$device"/product/etc/displayconfig/*
-          echo 提取音质音效
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/app/MiSound/MiSound.apk "$GITHUB_WORKSPACE"/get_files
-          echo 提取面容
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/MiuiBiometric3389.zip "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiBiometric3389
-          echo 提取相机
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/priv-app/MiuiCamera/MiuiCamera.apk "$GITHUB_WORKSPACE"/get_files
-          ls -l "$GITHUB_WORKSPACE"/get_files/
-          split -b 50M -d "$GITHUB_WORKSPACE"/get_files/MiuiCamera.apk "$GITHUB_WORKSPACE"/get_files/MiuiCamera.
-          ls -l "$GITHUB_WORKSPACE"/get_files/
-          rm -rf "$GITHUB_WORKSPACE"/get_files/MiuiCamera.apk
-          echo 提取Cit
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiCit/MiuiCit.apk "$GITHUB_WORKSPACE"/get_files
-          echo 提取pangu
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/pangu.zip "$GITHUB_WORKSPACE"/"$device"/product/pangu/system
+          mkdir -p "$GITHUB_WORKSPACE"/get_files/system
+          mkdir -p "$GITHUB_WORKSPACE"/get_files/vendor
+          mkdir -p "$GITHUB_WORKSPACE"/get_files/system_ext
+          mkdir -p "$GITHUB_WORKSPACE"/get_files/product
+          mkdir -p "$GITHUB_WORKSPACE"/get_files/odm
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system/system/build.prop "$GITHUB_WORKSPACE"/get_files/system
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/vendor/build.prop "$GITHUB_WORKSPACE"/get_files/vendor
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system_ext/etc/build.prop "$GITHUB_WORKSPACE"/get_files/system_ext
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/odm/etc/build.prop "$GITHUB_WORKSPACE"/get_files/odm
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/build.prop "$GITHUB_WORKSPACE"/get_files/product
         env:
           device: ${{ env.device }}
       - name: 6.查询提取次数
