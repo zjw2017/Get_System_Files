@@ -1,0 +1,117 @@
+name: get_files_for_lahaina
+on:
+  workflow_dispatch:
+    inputs:
+      URL:
+        description: "待操作的系统包下载地址"
+        required: true
+      info:
+        description: "提取文件信息"
+        required: true
+        type: string
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: 1.准备环境
+        run: |
+          echo "date=$(echo ${{ github.event.inputs.URL }} | cut -d"/" -f4)" >> $GITHUB_ENV
+          device1=$(echo ${{ github.event.inputs.URL }} | cut -d"_" -f2)
+          echo "device=$(echo ${device1,,})" >> $GITHUB_ENV
+          sudo apt install aria2 zip p7zip-full tar
+          sudo apt --fix-broken install
+          sudo apt update --fix-missing
+          mkdir -p "$GITHUB_WORKSPACE"/get_files
+          sudo chmod -R 777 "$GITHUB_WORKSPACE"/tools
+      - name: 2.下载系统包
+        run: |
+          aria2c -x16 -j$(nproc) -U "Mozilla/5.0" -d "$GITHUB_WORKSPACE" ${{ github.event.inputs.URL }}
+      - name: 3.解压payload
+        run: |
+          ZIP_NAME=$(echo ${{ github.event.inputs.URL }} | cut -d"/" -f5)
+          7z x "$GITHUB_WORKSPACE"/$ZIP_NAME -r -o"$GITHUB_WORKSPACE"/${{ env.device }} && rm -rf "$GITHUB_WORKSPACE"/$ZIP_NAME
+          for i in product; do
+              "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/${{ env.device }}/ -p $i "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin
+              cd "$GITHUB_WORKSPACE"/${{ env.device }} && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img -x && cd "$GITHUB_WORKSPACE"
+              rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
+          done
+          sudo rm -rf  "$GITHUB_WORKSPACE"/${{ env.device }}/config "$GITHUB_WORKSPACE"/${{ env.device }}/TI_config "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin
+      - name: 4.提取指定文件
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE"/get_files/product/overlay
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/AospFrameworkResOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/AospWifiResOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/DevicesAndroidOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/DevicesOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/MiuiFrameworkResOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/SettingsRroDeviceHideStatusBarOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/SettingsRroDeviceTypeOverlay.apk "$GITHUB_WORKSPACE"/get_files/product/overlay
+          sudo 7z a "$GITHUB_WORKSPACE"/get_files/overlay.zip "$GITHUB_WORKSPACE"/"$device"/product/overlay/*
+          sudo rm -rf "$GITHUB_WORKSPACE"/get_files/product/overlay
+          sudo 7z a "$GITHUB_WORKSPACE"/get_files/MiuiBiometric3389.zip "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiBiometric3389
+          sudo 7z a "$GITHUB_WORKSPACE"/get_files/pangu.zip "$GITHUB_WORKSPACE"/"$device"/product/pangu/system
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/priv-app/MiuiCamera/MiuiCamera.apk "$GITHUB_WORKSPACE"/get_files
+          cd "$GITHUB_WORKSPACE"/get_files
+          split -b 50M -d MiuiCamera.apk MiuiCamera.
+          rm -rf "$GITHUB_WORKSPACE"/get_files/MiuiCamera.apk
+          cd "$GITHUB_WORKSPACE"
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/device_features/venus.xml "$GITHUB_WORKSPACE"/get_files || true
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/device_features/mars.xml "$GITHUB_WORKSPACE"/get_files || true
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/device_features/star.xml "$GITHUB_WORKSPACE"/get_files || true
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiCit/MiuiCit.apk "$GITHUB_WORKSPACE"/get_files
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/app/MiSound/MiSound.apk "$GITHUB_WORKSPACE"/get_files/MiSound_T.apk
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiSubScreenUi/MiuiSubScreenUi.apk "$GITHUB_WORKSPACE"/get_files || true
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/displayconfig/display_id_4630946736638489730.xml "$GITHUB_WORKSPACE"/get_files
+        env:
+          device: ${{ env.device }}
+      - name: 5.查询提取次数
+        id: get-cache
+        uses: actions/cache@main
+        with:
+          path: |
+            ${{ env.device }}_count
+          key: ${{ env.device }}
+      - if: ${{ steps.get-cache.outputs.cache-hit != 'true' }}
+        name: 6.生成提取次数
+        run: |
+          touch $GITHUB_WORKSPACE/${{ env.device }}_count
+          echo 1 > $GITHUB_WORKSPACE/${{ env.device }}_count
+          echo "number=1"  >> $GITHUB_ENV
+      - name: 7.打包
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE"/zip
+          sudo chmod -R 777 "$GITHUB_WORKSPACE"/get_files
+          7z a "$GITHUB_WORKSPACE"/zip/"$device"_get_files.zip "$GITHUB_WORKSPACE"/get_files/*
+          number=$(cat $GITHUB_WORKSPACE/"$device"_count)
+          if [[ $number != 1 ]]; then
+              ((number++))
+              echo $number >$GITHUB_WORKSPACE/"$device"_count
+              echo "number=$number"  >> $GITHUB_ENV
+          fi
+          mv "$GITHUB_WORKSPACE"/zip/"$device"_get_files.zip "$GITHUB_WORKSPACE"/zip/"$device"_"${{ env.date }}"_"$number".zip
+          cd "$GITHUB_WORKSPACE"
+          touch file.log
+          echo "${{ github.event.inputs.info }}" > file.log
+        env:
+          device: ${{ env.device }}
+      - name: 8.上传到Github Release
+        uses: ncipollo/release-action@main
+        with:
+          artifacts: ${{ github.workspace }}/zip/*
+          name: ${{ env.device }}
+          tag: ${{ env.device }}
+          bodyFile: "${{ github.workspace }}/file.log"
+          allowUpdates: true
+          artifactErrorsFailBuild: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: 9.发送开始构建通知
+        run: |
+          number=$(cat $GITHUB_WORKSPACE/"$device"_count)
+          if [[ "${{ env.device }}" == "umi" ]]; then
+              curl -i -X POST -H 'Content-type':'application/json' -d '{"token":"${{ secrets.appToken }}","title":"小米10 ${{ env.date }}_${{ env.number }} 已完成提取","content":" **本次提取文件为：${{ github.event.inputs.info }}** ","topic":"get_system_files","template":"markdown"}' http://www.pushplus.plus/send || true
+          elif [[ "${{ env.device }}" == "cmi" ]]; then
+              curl -i -X POST -H 'Content-type':'application/json' -d '{"token":"${{ secrets.appToken }}","title":"小米10Pro ${{ env.date }}_${{ env.number }} 已完成提取","content":" **本次提取文件为：${{ github.event.inputs.info }}** ","topic":"get_system_files","template":"markdown"}' http://www.pushplus.plus/send || true
+          elif [[ "${{ env.device }}" == "cas" ]]; then
+              curl -i -X POST -H 'Content-type':'application/json' -d '{"token":"${{ secrets.appToken }}","title":"小米10 Ultra ${{ env.date }}_${{ env.number }} 已完成提取","content":" **本次提取文件为：${{ github.event.inputs.info }}** ","topic":"get_system_files","template":"markdown"}' http://www.pushplus.plus/send || true
+          fi
