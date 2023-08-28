@@ -99,6 +99,9 @@ jobs:
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/build.prop "$GITHUB_WORKSPACE"/get_files/product
           sudo cp -r "$GITHUB_WORKSPACE"/"$device"/product/pangu "$GITHUB_WORKSPACE"/get_files/product
           sudo cp -f "$GITHUB_WORKSPACE"/"$device"/mi_ext/etc/build.prop "$GITHUB_WORKSPACE"/get_files/mi_ext
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/* "$GITHUB_WORKSPACE"/get_files/product/etc
+          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/overlay/* "$GITHUB_WORKSPACE"/get_files/product/etc
+
         env:
           device: ${{ env.device }}
       - name: 6.查询提取次数
