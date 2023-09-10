@@ -92,11 +92,7 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE"/get_files/product
           mkdir -p "$GITHUB_WORKSPACE"/get_files/odm/firmware
           mkdir -p "$GITHUB_WORKSPACE"/get_files/mi_ext
-          sudo cp -f "$GITHUB_WORKSPACE"/"$device"/vendor/build.prop "$GITHUB_WORKSPACE"/get_files/vendor
           sudo 7z a "$GITHUB_WORKSPACE"/get_files/overlay.zip "$GITHUB_WORKSPACE"/"$device"/product/overlay/*
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/pangu.zip "$GITHUB_WORKSPACE"/"$device"/product/pangu/*
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/phoneservices.zip "$GITHUB_WORKSPACE"/"$device"/system/system/priv-app/TeleService/*
-          
         env:
           device: ${{ env.device }}
       - name: 6.查询提取次数
