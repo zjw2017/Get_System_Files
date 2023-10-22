@@ -94,6 +94,7 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE"/get_files/mi_ext
           sudo 7z a "$GITHUB_WORKSPACE"/get_files/overlay.zip "$GITHUB_WORKSPACE"/"$device"/product/overlay/*
           sudo 7z a "$GITHUB_WORKSPACE"/get_files/displayconfig.zip "$GITHUB_WORKSPACE"/"$device"/product/etc/displayconfig/*
+          sudo 7z a "$GITHUB_WORKSPACE"/get_files/devicefeatures.zip "$GITHUB_WORKSPACE"/"$device"/product/etc/device_features/*
         env:
           device: ${{ env.device }}
       - name: 6.查询提取次数
