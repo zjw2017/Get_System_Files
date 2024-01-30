@@ -92,7 +92,8 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE"/get_files/product
           mkdir -p "$GITHUB_WORKSPACE"/get_files/odm/firmware
           mkdir -p "$GITHUB_WORKSPACE"/get_files/mi_ext
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/mtb.zip "$GITHUB_WORKSPACE"/"$device"/system_ext/app/ModemTestBox/*
+          sudo 7z a "$GITHUB_WORKSPACE"/get_files/rc.zip "$GITHUB_WORKSPACE"/"$device"/system_ext/etc/init/memory.fbo.native@1.0-service.rc
+          sudo 7z a "$GITHUB_WORKSPACE"/get_files/FboNativeService.zip "$GITHUB_WORKSPACE"/"$device"/system_ext/bin/FboNativeService
           sudo 7z a "$GITHUB_WORKSPACE"/get_files/devicefeatures.zip "$GITHUB_WORKSPACE"/"$device"/product/etc/device_features/*
         env:
           device: ${{ env.device }}
