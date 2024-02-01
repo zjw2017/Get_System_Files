@@ -46,7 +46,9 @@ jobs:
       - if: ${{ env.unpack == 'payload' }}
         name: 4.解压payload
         run: |
-          for i in system odm system_ext product vendor mi_ext; do
+          unpack_partiton="product"
+          # unpack_partiton="system odm system_ext product vendor mi_ext"
+          for i in $unpack_partiton; do
               "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/${{ env.device }}/ -p $i "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin
               if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "ext" ]]; then
                   sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }}
@@ -59,42 +61,39 @@ jobs:
       - if: ${{ env.unpack == 'br' }}
         name: 4.解压br
         run: |
-          for i in system odm system_ext product vendor mi_ext; do
-              if [[ $i == mi_ext ]]; then
-                  if [ -e "$GITHUB_WORKSPACE"/${{ env.device }}/mi_ext.dat.br ]; then
-                      echo "has_mi_ext=true" >> $GITHUB_ENV
-                  else
-                      echo "has_mi_ext=false" >> $GITHUB_ENV
-                      break
-                  fi
-              fi
-              "$GITHUB_WORKSPACE"/tools/brotli -d "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat.br
-              rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat.br
-              python3 "$GITHUB_WORKSPACE"/tools/sdat2img.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.transfer.list "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
-              rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.patch.dat "$GITHUB_WORKSPACE"/${{ env.device }}/$i.transfer.list "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat
-              if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "ext" ]]; then
-                  sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }}
-              elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "erofs" ]]; then
-                  cd "$GITHUB_WORKSPACE"/${{ env.device }} && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img -x && cd "$GITHUB_WORKSPACE"
-              fi
-              rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
+          unpack_partiton="product"
+          # unpack_partiton="system odm system_ext product vendor mi_ext"
+          for i in $unpack_partiton; do
+            "$GITHUB_WORKSPACE"/tools/brotli -d "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat.br
+            rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat.br
+            python3 "$GITHUB_WORKSPACE"/tools/sdat2img.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.transfer.list "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
+            rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.patch.dat "$GITHUB_WORKSPACE"/${{ env.device }}/$i.transfer.list "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat
+            if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "ext" ]]; then
+              sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }}
+            elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "erofs" ]]; then
+              cd "$GITHUB_WORKSPACE"/${{ env.device }} && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img -x && cd "$GITHUB_WORKSPACE"
+            fi
+            rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
           done
           sudo rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/TI_config "$GITHUB_WORKSPACE"/${{ env.device }}/config
       - name: 5.提取指定文件
         run: |
-          if [[ "${{ env.has_mi_ext }}" == "true" ]]; then
-              mkdir -p "$GITHUB_WORKSPACE"/get_files/mi_ext
-              mi_ext_build_prop=$(sudo find "$GITHUB_WORKSPACE"/"$device"/mi_ext -name "build.prop")
-          fi
+          get_prop_files(){
+            mi_ext_build_prop=$(sudo find "$GITHUB_WORKSPACE"/"$device"/mi_ext -name "build.prop")
+            sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system/system/build.prop "$GITHUB_WORKSPACE"/get_files/system
+            sudo cp -f "$GITHUB_WORKSPACE"/"$device"/vendor/build.prop "$GITHUB_WORKSPACE"/get_files/vendor
+            sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system_ext/etc/build.prop "$GITHUB_WORKSPACE"/get_files/system_ext
+            sudo cp -f "$GITHUB_WORKSPACE"/"$device"/odm/etc/build.prop "$GITHUB_WORKSPACE"/get_files/odm
+            sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/build.prop "$GITHUB_WORKSPACE"/get_files/product
+            sudo cp -f "$mi_ext_build_prop" "$GITHUB_WORKSPACE"/get_files/mi_ext
+          }
           mkdir -p "$GITHUB_WORKSPACE"/get_files/system
           mkdir -p "$GITHUB_WORKSPACE"/get_files/vendor
           mkdir -p "$GITHUB_WORKSPACE"/get_files/system_ext
           mkdir -p "$GITHUB_WORKSPACE"/get_files/product
-          mkdir -p "$GITHUB_WORKSPACE"/get_files/odm/firmware
+          mkdir -p "$GITHUB_WORKSPACE"/get_files/odm
           mkdir -p "$GITHUB_WORKSPACE"/get_files/mi_ext
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/rc.zip "$GITHUB_WORKSPACE"/"$device"/system_ext/etc/init/memory.fbo.native@1.0-service.rc
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/FboNativeService.zip "$GITHUB_WORKSPACE"/"$device"/system_ext/bin/FboNativeService
-          sudo 7z a "$GITHUB_WORKSPACE"/get_files/devicefeatures.zip "$GITHUB_WORKSPACE"/"$device"/product/etc/device_features/*
+          get_prop_files
         env:
           device: ${{ env.device }}
       - name: 6.查询提取次数
