@@ -85,6 +85,8 @@ jobs:
             # sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system_ext/etc/build.prop "$GITHUB_WORKSPACE"/get_files/system_ext
             # sudo cp -f "$GITHUB_WORKSPACE"/"$device"/odm/etc/build.prop "$GITHUB_WORKSPACE"/get_files/odm
             sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/build.prop "$GITHUB_WORKSPACE"/get_files/product
+            sudo 7z a "$GITHUB_WORKSPACE"/get_files/devicefeatures.zip "$GITHUB_WORKSPACE"/"$device"/product/etc/device_features/*
+            sudo 7z a "$GITHUB_WORKSPACE"/get_files/overlay.zip "$GITHUB_WORKSPACE"/"$device"/product/overlay/*
             # sudo cp -f "$mi_ext_build_prop" "$GITHUB_WORKSPACE"/get_files/mi_ext
           }
           # mkdir -p "$GITHUB_WORKSPACE"/get_files/system
