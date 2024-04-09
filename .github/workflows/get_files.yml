@@ -46,8 +46,8 @@ jobs:
       - if: ${{ env.unpack == 'payload' }}
         name: 4.解压payload
         run: |
-          unpack_partiton="product"
-          # unpack_partiton="system odm system_ext product vendor mi_ext"
+          # unpack_partiton="product"
+          unpack_partiton="system odm system_ext product vendor mi_ext system_dlkm vendor_dlkm"
           for i in $unpack_partiton; do
               "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/${{ env.device }}/ -p $i "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin > /dev/null
               if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "ext" ]]; then
@@ -57,12 +57,12 @@ jobs:
               fi
               rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
           done
-          sudo rm -rf  "$GITHUB_WORKSPACE"/${{ env.device }}/config "$GITHUB_WORKSPACE"/${{ env.device }}/TI_config "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin
+          sudo rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/TI_config "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin
       - if: ${{ env.unpack == 'br' }}
         name: 4.解压br
         run: |
           unpack_partiton="product"
-          # unpack_partiton="system odm system_ext product vendor mi_ext"
+          # unpack_partiton="system odm system_ext product vendor mi_ext system_dlkm vendor_dlkm"
           for i in $unpack_partiton; do
             "$GITHUB_WORKSPACE"/tools/brotli -d "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat.br > /dev/null
             rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat.br
@@ -75,9 +75,10 @@ jobs:
             fi
             rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
           done
-          sudo rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/TI_config "$GITHUB_WORKSPACE"/${{ env.device }}/config
+          sudo rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/config
       - name: 5.提取指定文件
         run: |
+          mkdir -p "$GITHUB_WORKSPACE"/get_files
           get_prop_files(){
             # mi_ext_build_prop=$(sudo find "$GITHUB_WORKSPACE"/"$device"/mi_ext -name "build.prop")
             # sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system/system/build.prop "$GITHUB_WORKSPACE"/get_files/system
@@ -90,13 +91,21 @@ jobs:
             sudo 7z a "$GITHUB_WORKSPACE"/get_files/MiuiCamera.zip "$GITHUB_WORKSPACE"/"$device"/product/priv-app/MiuiCamera/*
             # sudo cp -f "$mi_ext_build_prop" "$GITHUB_WORKSPACE"/get_files/mi_ext
           }
+          get_files_config(){
+            if [ -d "$GITHUB_WORKSPACE"/${{ env.device }}/config ]; then
+              sudo 7z a "$GITHUB_WORKSPACE"/get_files/context.zip "$GITHUB_WORKSPACE"/${{ env.device }}/config/*
+            else
+              sudo 7z a "$GITHUB_WORKSPACE"/get_files/context.zip "$GITHUB_WORKSPACE"/${{ env.device }}/TI_config/*
+            fi
+          }
           # mkdir -p "$GITHUB_WORKSPACE"/get_files/system
           # mkdir -p "$GITHUB_WORKSPACE"/get_files/vendor
           # mkdir -p "$GITHUB_WORKSPACE"/get_files/system_ext
-          mkdir -p "$GITHUB_WORKSPACE"/get_files/product
+          # mkdir -p "$GITHUB_WORKSPACE"/get_files/product
           # mkdir -p "$GITHUB_WORKSPACE"/get_files/odm
           # mkdir -p "$GITHUB_WORKSPACE"/get_files/mi_ext
-          get_prop_files
+          # get_prop_files
+          get_files_config
         env:
           device: ${{ env.device }}
       - name: 6.查询提取次数
