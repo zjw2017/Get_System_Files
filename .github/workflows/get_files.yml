@@ -36,7 +36,7 @@ jobs:
           aria2c -x16 -j$(nproc) -U "Mozilla/5.0" -d "$GITHUB_WORKSPACE" ${{ github.event.inputs.URL }}
       - name: 3.检测payload/br
         run: |
-          ZIP_NAME=$(echo ${{ github.event.inputs.URL }} | cut -d"/" -f5)
+          ZIP_NAME=$(echo ${{ github.event.inputs.URL }} | sed 's/.*\(miui_.*\.zip\).*/\1/')
           7z x "$GITHUB_WORKSPACE"/$ZIP_NAME -r -o"$GITHUB_WORKSPACE"/${{ env.device }} && rm -rf "$GITHUB_WORKSPACE"/$ZIP_NAME
           if [[ -e "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin ]]; then
               echo "unpack=payload" >> $GITHUB_ENV
