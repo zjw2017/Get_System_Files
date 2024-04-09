@@ -33,7 +33,7 @@ jobs:
           sudo chmod -R 777 "$GITHUB_WORKSPACE"/tools
       - name: 2.下载系统包
         run: |
-          aria2c -x16 -j$(nproc) -U "Mozilla/5.0" -d "$GITHUB_WORKSPACE" ${{ github.event.inputs.URL }}
+          aria2c -x16 -j$(nproc) -U "Mozilla/5.0" -d "$GITHUB_WORKSPACE" "${{ github.event.inputs.URL }}"
       - name: 3.检测payload/br
         run: |
           ZIP_NAME=$(echo ${{ github.event.inputs.URL }} | sed 's/.*\(miui_.*\.zip\).*/\1/')
