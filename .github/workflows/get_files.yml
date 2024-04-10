@@ -16,8 +16,8 @@ jobs:
       - uses: actions/checkout@master
       - name: 1.准备环境
         run: |
-          echo "date=$(echo ${{ github.event.inputs.URL }} | cut -d"/" -f4)" >> $GITHUB_ENV
-          device1=$(echo ${{ github.event.inputs.URL }} | cut -d"_" -f2)
+          echo "date=$(echo "${{ github.event.inputs.URL }}" | cut -d"/" -f4)" >> $GITHUB_ENV
+          device1=$(echo "${{ github.event.inputs.URL }}" | cut -d"_" -f2)
           echo "device=$(echo ${device1,,})" >> $GITHUB_ENV
           sudo apt install python3 python3-pip aria2 zip p7zip-full tar zipalign zstd dos2unix
           sudo apt --fix-broken install
@@ -36,7 +36,7 @@ jobs:
           aria2c -x16 -j$(nproc) -U "Mozilla/5.0" -d "$GITHUB_WORKSPACE" "${{ github.event.inputs.URL }}"
       - name: 3.检测payload/br
         run: |
-          ZIP_NAME=$(echo ${{ github.event.inputs.URL }} | sed 's/.*\(miui_.*\.zip\).*/\1/')
+          ZIP_NAME=$(echo "${{ github.event.inputs.URL }}" | sed 's/.*\(miui_.*\.zip\).*/\1/')
           7z x "$GITHUB_WORKSPACE"/$ZIP_NAME -r -o"$GITHUB_WORKSPACE"/${{ env.device }} && rm -rf "$GITHUB_WORKSPACE"/$ZIP_NAME
           if [[ -e "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin ]]; then
               echo "unpack=payload" >> $GITHUB_ENV
