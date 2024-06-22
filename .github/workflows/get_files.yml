@@ -13,70 +13,61 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - name: 1.准备环境
+      - uses: actions/checkout@v4.1.7
+      - name: 准备环境
         run: |
           echo "date=$(echo "${{ github.event.inputs.URL }}" | cut -d"/" -f4)" >> $GITHUB_ENV
           device1=$(echo "${{ github.event.inputs.URL }}" | cut -d"_" -f2)
           echo "device=$(echo ${device1,,})" >> $GITHUB_ENV
-          sudo apt install python3 python3-pip aria2 zip p7zip-full tar zipalign zstd dos2unix
-          sudo apt --fix-broken install
-          sudo apt update --fix-missing
-          pip3 install --upgrade pip
-          pip3 install pycryptodome
-          pip3 install setuptools
-          pip3 install docopt
-          pip3 install requests
-          pip3 install beautifulsoup4
-          pip3 install --ignore-installed pyyaml
+          sudo apt install aria2 p7zip-full
           mkdir -p "$GITHUB_WORKSPACE"/get_files
           sudo chmod -R 777 "$GITHUB_WORKSPACE"/tools
-      - name: 2.下载系统包
+      - name: 下载系统包
         run: |
           aria2c -x16 -j$(nproc) -U "Mozilla/5.0" -d "$GITHUB_WORKSPACE" "${{ github.event.inputs.URL }}"
-      - name: 3.检测payload/br
+      - name: 检测payload/br
         run: |
           ZIP_NAME=$(echo "${{ github.event.inputs.URL }}" | sed 's/.*\(miui_.*\.zip\).*/\1/')
-          7z x "$GITHUB_WORKSPACE"/$ZIP_NAME -r -o"$GITHUB_WORKSPACE"/${{ env.device }} && rm -rf "$GITHUB_WORKSPACE"/$ZIP_NAME
-          if [[ -e "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin ]]; then
+          7z x "$GITHUB_WORKSPACE"/$ZIP_NAME -r -o"$GITHUB_WORKSPACE"/$device && rm -rf "$GITHUB_WORKSPACE"/$ZIP_NAME
+          if [[ -e "$GITHUB_WORKSPACE"/$device/payload.bin ]]; then
               echo "unpack=payload" >> $GITHUB_ENV
           else
               echo "unpack=br" >> $GITHUB_ENV
           fi
       - if: ${{ env.unpack == 'payload' }}
-        name: 4.解压payload
+        name: 解压payload
         run: |
           # unpack_partiton="product"
           unpack_partiton="system odm system_ext product vendor mi_ext system_dlkm vendor_dlkm"
           for i in $unpack_partiton; do
-              "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/${{ env.device }}/ -p $i "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin > /dev/null
-              if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "ext" ]]; then
-                  sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }} > /dev/null
-              elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "erofs" ]]; then
-                  cd "$GITHUB_WORKSPACE"/${{ env.device }} && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img -x > /dev/null && cd "$GITHUB_WORKSPACE"
+              "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/$device/ -p $i "$GITHUB_WORKSPACE"/$device/payload.bin > /dev/null
+              if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "ext" ]]; then
+                  sudo "$GITHUB_WORKSPACE"/tools/imgextractorLinux "$GITHUB_WORKSPACE"/$device/$i.img "$GITHUB_WORKSPACE"/$device > /dev/null
+              elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "erofs" ]]; then
+                  cd "$GITHUB_WORKSPACE"/$device && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/$device/$i.img -x > /dev/null && cd "$GITHUB_WORKSPACE"
               fi
-              rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
+              rm -rf "$GITHUB_WORKSPACE"/$device/$i.img
           done
-          sudo rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/TI_config "$GITHUB_WORKSPACE"/${{ env.device }}/payload.bin
+          sudo rm -rf "$GITHUB_WORKSPACE"/$device/TI_config "$GITHUB_WORKSPACE"/$device/payload.bin
       - if: ${{ env.unpack == 'br' }}
-        name: 4.解压br
+        name: 解压br
         run: |
           unpack_partiton="product"
           # unpack_partiton="system odm system_ext product vendor mi_ext system_dlkm vendor_dlkm"
           for i in $unpack_partiton; do
-            "$GITHUB_WORKSPACE"/tools/brotli -d "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat.br > /dev/null
-            rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat.br
-            python3 "$GITHUB_WORKSPACE"/tools/sdat2img.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.transfer.list "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img > /dev/null
-            rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.patch.dat "$GITHUB_WORKSPACE"/${{ env.device }}/$i.transfer.list "$GITHUB_WORKSPACE"/${{ env.device }}/$i.new.dat
-            if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "ext" ]]; then
-              sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img "$GITHUB_WORKSPACE"/${{ env.device }} > /dev/null
-            elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img) == "erofs" ]]; then
-              cd "$GITHUB_WORKSPACE"/${{ env.device }} && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img -x > /dev/null && cd "$GITHUB_WORKSPACE"
+            "$GITHUB_WORKSPACE"/tools/brotli -d "$GITHUB_WORKSPACE"/$device/$i.new.dat.br > /dev/null
+            rm -rf "$GITHUB_WORKSPACE"/$device/$i.new.dat.br
+            "$GITHUB_WORKSPACE"/tools/sdat2img "$GITHUB_WORKSPACE"/$device/$i.transfer.list "$GITHUB_WORKSPACE"/$device/$i.new.dat "$GITHUB_WORKSPACE"/$device/$i.img > /dev/null
+            rm -rf "$GITHUB_WORKSPACE"/$device/$i.patch.dat "$GITHUB_WORKSPACE"/$device/$i.transfer.list "$GITHUB_WORKSPACE"/$device/$i.new.dat
+            if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "ext" ]]; then
+              sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/$device/$i.img "$GITHUB_WORKSPACE"/$device > /dev/null
+            elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "erofs" ]]; then
+              cd "$GITHUB_WORKSPACE"/$device && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/$device/$i.img -x > /dev/null && cd "$GITHUB_WORKSPACE"
             fi
-            rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/$i.img
+            rm -rf "$GITHUB_WORKSPACE"/$device/$i.img
           done
-          sudo rm -rf "$GITHUB_WORKSPACE"/${{ env.device }}/config
-      - name: 5.提取指定文件
+          sudo rm -rf "$GITHUB_WORKSPACE"/$device/config
+      - name: 提取指定文件
         run: |
           mkdir -p "$GITHUB_WORKSPACE"/get_files
           get_prop_files(){
@@ -92,10 +83,10 @@ jobs:
             # sudo cp -f "$mi_ext_build_prop" "$GITHUB_WORKSPACE"/get_files/mi_ext
           }
           get_files_config(){
-            if [ -d "$GITHUB_WORKSPACE"/${{ env.device }}/config ]; then
-              sudo 7z a "$GITHUB_WORKSPACE"/get_files/context.zip "$GITHUB_WORKSPACE"/${{ env.device }}/config/*
+            if [ -d "$GITHUB_WORKSPACE"/$device/config ]; then
+              sudo 7z a "$GITHUB_WORKSPACE"/get_files/context.zip "$GITHUB_WORKSPACE"/$device/config/*
             else
-              sudo 7z a "$GITHUB_WORKSPACE"/get_files/context.zip "$GITHUB_WORKSPACE"/${{ env.device }}/TI_config/*
+              sudo 7z a "$GITHUB_WORKSPACE"/get_files/context.zip "$GITHUB_WORKSPACE"/$device/TI_config/*
             fi
           }
           # mkdir -p "$GITHUB_WORKSPACE"/get_files/system
@@ -106,39 +97,18 @@ jobs:
           # mkdir -p "$GITHUB_WORKSPACE"/get_files/mi_ext
           # get_prop_files
           get_files_config
-        env:
-          device: ${{ env.device }}
-      - name: 6.查询提取次数
-        id: get-cache
-        uses: actions/cache@main
-        with:
-          path: |
-            ${{ env.device }}_count
-          key: ${{ env.device }}
-      - if: ${{ steps.get-cache.outputs.cache-hit != 'true' }}
-        name: 7.生成提取次数
+      - name: 打包
         run: |
-          touch $GITHUB_WORKSPACE/${{ env.device }}_count
-          echo 1 > $GITHUB_WORKSPACE/${{ env.device }}_count
-          echo "number=1"  >> $GITHUB_ENV
-      - name: 8.打包
-        run: |
+          timestamp=$(date +%s)
+          echo "timestamp=$timestamp" >> $GITHUB_ENV
           mkdir -p "$GITHUB_WORKSPACE"/zip
           sudo chmod -R 777 "$GITHUB_WORKSPACE"/get_files
           7z a "$GITHUB_WORKSPACE"/zip/"$device"_get_files.zip "$GITHUB_WORKSPACE"/get_files/*
-          number=$(cat $GITHUB_WORKSPACE/"$device"_count)
-          if [[ $number != 1 ]]; then
-              ((number++))
-              echo $number >$GITHUB_WORKSPACE/"$device"_count
-              echo "number=$number"  >> $GITHUB_ENV
-          fi
-          mv "$GITHUB_WORKSPACE"/zip/"$device"_get_files.zip "$GITHUB_WORKSPACE"/zip/"$device"_"${{ env.date }}"_"$number".zip
+          mv "$GITHUB_WORKSPACE"/zip/"$device"_get_files.zip "$GITHUB_WORKSPACE"/zip/"$device"_"$date"_"$timestamp".zip
           cd "$GITHUB_WORKSPACE"
           touch file.log
           echo "${{ github.event.inputs.info }}" > file.log
-        env:
-          device: ${{ env.device }}
-      - name: 9.上传到Github Release
+      - name: 上传到Github Release
         uses: ncipollo/release-action@main
         with:
           artifacts: ${{ github.workspace }}/zip/*
@@ -148,13 +118,3 @@ jobs:
           allowUpdates: true
           artifactErrorsFailBuild: true
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: 10.发送开始构建通知
-        run: |
-          number=$(cat $GITHUB_WORKSPACE/"$device"_count)
-          if [[ "${{ env.device }}" == "umi" ]]; then
-              curl -i -X POST -H 'Content-type':'application/json' -d '{"token":"${{ secrets.appToken }}","title":"小米10 ${{ env.date }}_${{ env.number }} 已完成提取","content":" **本次提取文件为：${{ github.event.inputs.info }}** ","topic":"get_system_files","template":"markdown"}' http://www.pushplus.plus/send || true
-          elif [[ "${{ env.device }}" == "cmi" ]]; then
-              curl -i -X POST -H 'Content-type':'application/json' -d '{"token":"${{ secrets.appToken }}","title":"小米10Pro ${{ env.date }}_${{ env.number }} 已完成提取","content":" **本次提取文件为：${{ github.event.inputs.info }}** ","topic":"get_system_files","template":"markdown"}' http://www.pushplus.plus/send || true
-          elif [[ "${{ env.device }}" == "cas" ]]; then
-              curl -i -X POST -H 'Content-type':'application/json' -d '{"token":"${{ secrets.appToken }}","title":"小米10 Ultra ${{ env.date }}_${{ env.number }} 已完成提取","content":" **本次提取文件为：${{ github.event.inputs.info }}** ","topic":"get_system_files","template":"markdown"}' http://www.pushplus.plus/send || true
-          fi
