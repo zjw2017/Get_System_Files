@@ -95,7 +95,7 @@ jobs:
           # mkdir -p "$GITHUB_WORKSPACE"/get_files/product
           # mkdir -p "$GITHUB_WORKSPACE"/get_files/odm
           # mkdir -p "$GITHUB_WORKSPACE"/get_files/mi_ext
-          # get_prop_files
+          get_prop_files
           get_files_config
       - name: 打包
         run: |
