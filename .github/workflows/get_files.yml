@@ -3,118 +3,117 @@ on:
   workflow_dispatch:
     inputs:
       URL:
-        description: "待操作的系统包下载地址"
+        description: "下载地址（线刷包到tgz截止）"
         required: true
-      info:
-        description: "提取文件信息"
-        required: true
-        type: string
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.1.7
+      - name: 检出仓库文件
+        uses: actions/checkout@v4.1.7
       - name: 准备环境
         run: |
-          echo "date=$(echo "${{ github.event.inputs.URL }}" | cut -d"/" -f4)" >> $GITHUB_ENV
-          device1=$(echo "${{ github.event.inputs.URL }}" | cut -d"_" -f2)
-          echo "device=$(echo ${device1,,})" >> $GITHUB_ENV
-          sudo apt install aria2 p7zip-full
+          sudo timedatectl set-timezone Asia/Shanghai
+          if [[ "$URL" == *"CNXM"* ]]; then
+            URL="${URL/http:\/\/cdnorg.d.miui.com/https:\/\/bkt-sgp-miui-ota-update-alisgp.oss-ap-southeast-1.aliyuncs.com}"
+          fi
+          if [[ "$URL" == *"images"* ]]; then
+            device=$(echo "$URL" | cut -d"/" -f5 | cut -d"_" -f1)
+            ZIP_NAME=$(echo "$URL" | cut -d"/" -f5)
+          else
+            device=$(echo "$URL" | cut -d"_" -f2)
+            ZIP_NAME=$(echo "$URL" | sed 's/.*\(miui_.*\.zip\).*/\1/')
+          fi
+          echo "device=${device,,}" >> $GITHUB_ENV
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+          echo "version=$(echo "$URL" | cut -d"/" -f4)" >> $GITHUB_ENV
+          sudo apt install aria2 p7zip-full tar
           mkdir -p "$GITHUB_WORKSPACE"/get_files
           sudo chmod -R 777 "$GITHUB_WORKSPACE"/tools
+        env:
+          URL: ${{ inputs.URL }}
       - name: 下载系统包
         run: |
-          aria2c -x16 -j$(nproc) -U "Mozilla/5.0" -d "$GITHUB_WORKSPACE" "${{ github.event.inputs.URL }}"
-      - name: 检测payload/br
+          aria2c -x16 -j$(nproc) -U "Mozilla/5.0" -d "$GITHUB_WORKSPACE" "$URL"
+        env:
+          URL: ${{ inputs.URL }}
+      - name: 检测payload/br/线刷包
         run: |
-          ZIP_NAME=$(echo "${{ github.event.inputs.URL }}" | sed 's/.*\(miui_.*\.zip\).*/\1/')
-          7z x "$GITHUB_WORKSPACE"/$ZIP_NAME -r -o"$GITHUB_WORKSPACE"/$device && rm -rf "$GITHUB_WORKSPACE"/$ZIP_NAME
-          if [[ -e "$GITHUB_WORKSPACE"/$device/payload.bin ]]; then
-              echo "unpack=payload" >> $GITHUB_ENV
+          if [[ "$ZIP_NAME" == *"images"* ]]; then
+            tar xvzf $ZIP_NAME -C "$GITHUB_WORKSPACE"
+            unpack_path="$(find "$GITHUB_WORKSPACE" -type d -name "*_images*")"
+            mv "$unpack_path" "$GITHUB_WORKSPACE"/$device
           else
-              echo "unpack=br" >> $GITHUB_ENV
+            7z x "$GITHUB_WORKSPACE"/$ZIP_NAME -r -o"$GITHUB_WORKSPACE"/$device
           fi
+          rm -rf "$GITHUB_WORKSPACE"/$ZIP_NAME
+          if [[ -e "$GITHUB_WORKSPACE"/$device/payload.bin ]]; then
+            echo "unpack=payload" >> $GITHUB_ENV
+          else
+            echo "unpack=br" >> $GITHUB_ENV
+          fi
+          if [[ "$ZIP_NAME" == *"images"* ]]; then
+            echo "unpack=flash" >> $GITHUB_ENV
+          fi
+        env:
+          URL: ${{ inputs.URL }}
       - if: ${{ env.unpack == 'payload' }}
         name: 解压payload
         run: |
-          # unpack_partiton="product"
-          unpack_partiton="system odm system_ext product vendor mi_ext system_dlkm vendor_dlkm"
+          source unpack.sh
           for i in $unpack_partiton; do
-              "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/$device/ -p $i "$GITHUB_WORKSPACE"/$device/payload.bin > /dev/null
-              if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "ext" ]]; then
-                  sudo "$GITHUB_WORKSPACE"/tools/imgextractorLinux "$GITHUB_WORKSPACE"/$device/$i.img "$GITHUB_WORKSPACE"/$device > /dev/null
-              elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "erofs" ]]; then
-                  cd "$GITHUB_WORKSPACE"/$device && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/$device/$i.img -x > /dev/null && cd "$GITHUB_WORKSPACE"
-              fi
-              rm -rf "$GITHUB_WORKSPACE"/$device/$i.img
+            "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/$device/ -p $i "$GITHUB_WORKSPACE"/$device/payload.bin > /dev/null
           done
-          sudo rm -rf "$GITHUB_WORKSPACE"/$device/TI_config "$GITHUB_WORKSPACE"/$device/payload.bin
       - if: ${{ env.unpack == 'br' }}
         name: 解压br
         run: |
-          unpack_partiton="product"
-          # unpack_partiton="system odm system_ext product vendor mi_ext system_dlkm vendor_dlkm"
+          source unpack.sh
           for i in $unpack_partiton; do
             "$GITHUB_WORKSPACE"/tools/brotli -d "$GITHUB_WORKSPACE"/$device/$i.new.dat.br > /dev/null
             rm -rf "$GITHUB_WORKSPACE"/$device/$i.new.dat.br
             "$GITHUB_WORKSPACE"/tools/sdat2img "$GITHUB_WORKSPACE"/$device/$i.transfer.list "$GITHUB_WORKSPACE"/$device/$i.new.dat "$GITHUB_WORKSPACE"/$device/$i.img > /dev/null
             rm -rf "$GITHUB_WORKSPACE"/$device/$i.patch.dat "$GITHUB_WORKSPACE"/$device/$i.transfer.list "$GITHUB_WORKSPACE"/$device/$i.new.dat
+          done
+      - if: ${{ env.unpack == 'flash' }}
+        name: 解压线刷包
+        run: |
+          source unpack.sh
+          "$GITHUB_WORKSPACE"/tools/simg2img "$GITHUB_WORKSPACE"/$device/images/super.img "$GITHUB_WORKSPACE"/$device/super.img
+          rm -rf "$GITHUB_WORKSPACE"/$device/images/super.img
+          for i in $unpack_partiton; do
+            "$GITHUB_WORKSPACE"/tools/lpunpack -p "$i"_a "$GITHUB_WORKSPACE"/$device/super.img "$GITHUB_WORKSPACE"/$device
+            mv "$GITHUB_WORKSPACE"/$device/"$i"_a.img "$GITHUB_WORKSPACE"/$device/"$i".img
+          done
+          rm -rf "$GITHUB_WORKSPACE"/$device/super.img
+      - name: 解压img
+        run: |
+          source unpack.sh
+          for i in $unpack_partiton; do
             if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "ext" ]]; then
-              sudo python3 "$GITHUB_WORKSPACE"/tools/imgextractorLinux/imgextractorLinux.py "$GITHUB_WORKSPACE"/$device/$i.img "$GITHUB_WORKSPACE"/$device > /dev/null
+              sudo "$GITHUB_WORKSPACE"/tools/imgextractorLinux "$GITHUB_WORKSPACE"/$device/$i.img "$GITHUB_WORKSPACE"/$device > /dev/null
             elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "erofs" ]]; then
               cd "$GITHUB_WORKSPACE"/$device && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/$device/$i.img -x > /dev/null && cd "$GITHUB_WORKSPACE"
             fi
             rm -rf "$GITHUB_WORKSPACE"/$device/$i.img
           done
-          sudo rm -rf "$GITHUB_WORKSPACE"/$device/config
       - name: 提取指定文件
         run: |
-          mkdir -p "$GITHUB_WORKSPACE"/get_files
-          get_prop_files(){
-            # mi_ext_build_prop=$(sudo find "$GITHUB_WORKSPACE"/"$device"/mi_ext -name "build.prop")
-            # sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system/system/build.prop "$GITHUB_WORKSPACE"/get_files/system
-            # sudo cp -f "$GITHUB_WORKSPACE"/"$device"/vendor/build.prop "$GITHUB_WORKSPACE"/get_files/vendor
-            # sudo cp -f "$GITHUB_WORKSPACE"/"$device"/system_ext/etc/build.prop "$GITHUB_WORKSPACE"/get_files/system_ext
-            # sudo cp -f "$GITHUB_WORKSPACE"/"$device"/odm/etc/build.prop "$GITHUB_WORKSPACE"/get_files/odm
-            sudo cp -f "$GITHUB_WORKSPACE"/"$device"/product/etc/build.prop "$GITHUB_WORKSPACE"/get_files/product
-            sudo 7z a "$GITHUB_WORKSPACE"/get_files/devicefeatures.zip "$GITHUB_WORKSPACE"/"$device"/product/etc/device_features/*
-            sudo 7z a "$GITHUB_WORKSPACE"/get_files/overlay.zip "$GITHUB_WORKSPACE"/"$device"/product/overlay/*
-            sudo 7z a "$GITHUB_WORKSPACE"/get_files/MiuiCamera.zip "$GITHUB_WORKSPACE"/"$device"/product/priv-app/MiuiCamera/*
-            # sudo cp -f "$mi_ext_build_prop" "$GITHUB_WORKSPACE"/get_files/mi_ext
-          }
-          get_files_config(){
-            if [ -d "$GITHUB_WORKSPACE"/$device/config ]; then
-              sudo 7z a "$GITHUB_WORKSPACE"/get_files/context.zip "$GITHUB_WORKSPACE"/$device/config/*
-            else
-              sudo 7z a "$GITHUB_WORKSPACE"/get_files/context.zip "$GITHUB_WORKSPACE"/$device/TI_config/*
-            fi
-          }
-          # mkdir -p "$GITHUB_WORKSPACE"/get_files/system
-          # mkdir -p "$GITHUB_WORKSPACE"/get_files/vendor
-          # mkdir -p "$GITHUB_WORKSPACE"/get_files/system_ext
-          # mkdir -p "$GITHUB_WORKSPACE"/get_files/product
-          # mkdir -p "$GITHUB_WORKSPACE"/get_files/odm
-          # mkdir -p "$GITHUB_WORKSPACE"/get_files/mi_ext
-          get_prop_files
-          get_files_config
+          source unpack.sh
+          extract_files
       - name: 打包
         run: |
-          timestamp=$(date +%s)
-          echo "timestamp=$timestamp" >> $GITHUB_ENV
           mkdir -p "$GITHUB_WORKSPACE"/zip
           sudo chmod -R 777 "$GITHUB_WORKSPACE"/get_files
           7z a "$GITHUB_WORKSPACE"/zip/"$device"_get_files.zip "$GITHUB_WORKSPACE"/get_files/*
-          mv "$GITHUB_WORKSPACE"/zip/"$device"_get_files.zip "$GITHUB_WORKSPACE"/zip/"$device"_"$date"_"$timestamp".zip
+          mv "$GITHUB_WORKSPACE"/zip/"$device"_get_files.zip "$GITHUB_WORKSPACE"/zip/"$device"_"$version"_"$(date +"%Y-%m-%d_%H%M%S")".zip
           cd "$GITHUB_WORKSPACE"
-          touch file.log
-          echo "${{ github.event.inputs.info }}" > file.log
       - name: 上传到Github Release
         uses: ncipollo/release-action@main
         with:
           artifacts: ${{ github.workspace }}/zip/*
           name: ${{ env.device }}
           tag: ${{ env.device }}
-          bodyFile: "${{ github.workspace }}/file.log"
+          bodyFile: "${{ github.workspace }}/info.txt"
           allowUpdates: true
           artifactErrorsFailBuild: true
           token: ${{ secrets.GITHUB_TOKEN }}
