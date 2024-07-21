@@ -129,3 +129,4 @@ jobs:
           allowUpdates: true
           artifactErrorsFailBuild: true
           token: ${{ secrets.GITHUB_TOKEN }}
+          makeLatest: true
