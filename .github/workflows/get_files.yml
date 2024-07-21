@@ -62,17 +62,29 @@ jobs:
         run: |
           source unpack.sh
           for i in $unpack_partiton; do
-            "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/$device/ -p $i "$GITHUB_WORKSPACE"/$device/payload.bin > /dev/null
+            "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/$device/ -p $i "$GITHUB_WORKSPACE"/$device/payload.bin >/dev/null
+            if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "ext" ]]; then
+              sudo "$GITHUB_WORKSPACE"/tools/imgextractorLinux "$GITHUB_WORKSPACE"/$device/$i.img "$GITHUB_WORKSPACE"/$device >/dev/null
+            elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "erofs" ]]; then
+              cd "$GITHUB_WORKSPACE"/$device && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/$device/$i.img -x >/dev/null && cd "$GITHUB_WORKSPACE"
+            fi
+            rm -rf "$GITHUB_WORKSPACE"/$device/$i.img
           done
       - if: ${{ env.unpack == 'br' }}
         name: 解压br
         run: |
           source unpack.sh
           for i in $unpack_partiton; do
-            "$GITHUB_WORKSPACE"/tools/brotli -d "$GITHUB_WORKSPACE"/$device/$i.new.dat.br > /dev/null
+            "$GITHUB_WORKSPACE"/tools/brotli -d "$GITHUB_WORKSPACE"/$device/$i.new.dat.br >/dev/null
             rm -rf "$GITHUB_WORKSPACE"/$device/$i.new.dat.br
-            "$GITHUB_WORKSPACE"/tools/sdat2img "$GITHUB_WORKSPACE"/$device/$i.transfer.list "$GITHUB_WORKSPACE"/$device/$i.new.dat "$GITHUB_WORKSPACE"/$device/$i.img > /dev/null
+            "$GITHUB_WORKSPACE"/tools/sdat2img "$GITHUB_WORKSPACE"/$device/$i.transfer.list "$GITHUB_WORKSPACE"/$device/$i.new.dat "$GITHUB_WORKSPACE"/$device/$i.img >/dev/null
             rm -rf "$GITHUB_WORKSPACE"/$device/$i.patch.dat "$GITHUB_WORKSPACE"/$device/$i.transfer.list "$GITHUB_WORKSPACE"/$device/$i.new.dat
+            if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "ext" ]]; then
+              sudo "$GITHUB_WORKSPACE"/tools/imgextractorLinux "$GITHUB_WORKSPACE"/$device/$i.img "$GITHUB_WORKSPACE"/$device >/dev/null
+            elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "erofs" ]]; then
+              cd "$GITHUB_WORKSPACE"/$device && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/$device/$i.img -x >/dev/null && cd "$GITHUB_WORKSPACE"
+            fi
+            rm -rf "$GITHUB_WORKSPACE"/$device/$i.img
           done
       - if: ${{ env.unpack == 'flash' }}
         name: 解压线刷包
@@ -83,19 +95,14 @@ jobs:
           for i in $unpack_partiton; do
             "$GITHUB_WORKSPACE"/tools/lpunpack -p "$i"_a "$GITHUB_WORKSPACE"/$device/super.img "$GITHUB_WORKSPACE"/$device
             mv "$GITHUB_WORKSPACE"/$device/"$i"_a.img "$GITHUB_WORKSPACE"/$device/"$i".img
-          done
-          rm -rf "$GITHUB_WORKSPACE"/$device/super.img
-      - name: 解压img
-        run: |
-          source unpack.sh
-          for i in $unpack_partiton; do
             if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "ext" ]]; then
-              sudo "$GITHUB_WORKSPACE"/tools/imgextractorLinux "$GITHUB_WORKSPACE"/$device/$i.img "$GITHUB_WORKSPACE"/$device > /dev/null
+              sudo "$GITHUB_WORKSPACE"/tools/imgextractorLinux "$GITHUB_WORKSPACE"/$device/$i.img "$GITHUB_WORKSPACE"/$device >/dev/null
             elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "erofs" ]]; then
-              cd "$GITHUB_WORKSPACE"/$device && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/$device/$i.img -x > /dev/null && cd "$GITHUB_WORKSPACE"
+              cd "$GITHUB_WORKSPACE"/$device && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/$device/$i.img -x >/dev/null && cd "$GITHUB_WORKSPACE"
             fi
             rm -rf "$GITHUB_WORKSPACE"/$device/$i.img
           done
+          rm -rf "$GITHUB_WORKSPACE"/$device/super.img
       - name: 提取指定文件
         run: |
           source unpack.sh

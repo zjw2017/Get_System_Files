@@ -1,5 +1,6 @@
 #!/bin/bash
 # shellcheck disable=SC2034
+# shellcheck disable=SC2154
 
 # 适用于出厂安卓13的机型
 unpack_partiton="system odm system_ext product vendor mi_ext system_dlkm vendor_dlkm"
@@ -8,45 +9,64 @@ unpack_partiton="system odm system_ext product vendor mi_ext system_dlkm vendor_
 # 适用于没有官方安卓13的机型
 # unpack_partiton="system odm system_ext product vendor"
 
-mkdir -p "$GITHUB_WORKSPACE"/get_files
-
-get_prop_files() {
-  mkdir -p "$GITHUB_WORKSPACE"/get_files/system
-  mkdir -p "$GITHUB_WORKSPACE"/get_files/vendor
-  mkdir -p "$GITHUB_WORKSPACE"/get_files/system_ext/etc
-  mkdir -p "$GITHUB_WORKSPACE"/get_files/odm/etc
-  mkdir -p "$GITHUB_WORKSPACE"/get_files/product/etc
-  mkdir -p "$GITHUB_WORKSPACE"/get_files/mi_ext
-  mi_ext_build_prop=$(sudo find "$GITHUB_WORKSPACE"/"$device"/mi_ext -name "build.prop")
-  sudo cp "$GITHUB_WORKSPACE"/"$device"/system/system/build.prop "$GITHUB_WORKSPACE"/get_files/system/system
-  sudo cp "$GITHUB_WORKSPACE"/"$device"/vendor/build.prop "$GITHUB_WORKSPACE"/get_files/vendor
-  sudo cp "$GITHUB_WORKSPACE"/"$device"/system_ext/etc/build.prop "$GITHUB_WORKSPACE"/get_files/system_ext/etc
-  sudo cp "$GITHUB_WORKSPACE"/"$device"/odm/etc/build.prop "$GITHUB_WORKSPACE"/get_files/odm/etc
-  sudo cp "$GITHUB_WORKSPACE"/"$device"/product/etc/build.prop "$GITHUB_WORKSPACE"/get_files/product/etc
-  sudo cp "$mi_ext_build_prop" "$GITHUB_WORKSPACE"/get_files/mi_ext
-}
-
 get_files_config() {
   mkdir -p "$GITHUB_WORKSPACE"/get_files/config
   cp -r "$GITHUB_WORKSPACE"/"$device"/config/* "$GITHUB_WORKSPACE"/get_files/config
 }
 
-get_camera() {
-  mkdir -p "$GITHUB_WORKSPACE"/get_files/product/priv-app/
-  cp -r "$GITHUB_WORKSPACE"/"$device"/product/priv-app/MiuiCamera "$GITHUB_WORKSPACE"/get_files/product/priv-app
+get_system_files() {
+  local source="$1"
+  if [ "$(echo "$source" | cut -d"/" -f2)" = "system" ]; then
+    source=/system"$source"
+  fi
+  path=${source%/*}
+  mkdir -p "$GITHUB_WORKSPACE"/get_files"$path"
+  if [ -f "$GITHUB_WORKSPACE"/"$device""$source" ]; then
+    cp "$GITHUB_WORKSPACE"/"$device""$source" "$GITHUB_WORKSPACE"/get_files"$path"
+  elif [ -d "$GITHUB_WORKSPACE"/"$device""$source" ]; then
+    cp -r "$GITHUB_WORKSPACE"/"$device""$source" "$GITHUB_WORKSPACE"/get_files"$path"
+  else
+    echo "$source 不存在"
+  fi
 }
 
-get_device_features() {
-  mkdir -p "$GITHUB_WORKSPACE"/get_files/product/etc
-  cp -r "$GITHUB_WORKSPACE"/"$device"/product/etc/device_features "$GITHUB_WORKSPACE"/get_files/product/etc
-}
-get_overlay() {
-  mkdir -p "$GITHUB_WORKSPACE"/get_files/product
-  cp -r "$GITHUB_WORKSPACE"/"$device"/product/overlay "$GITHUB_WORKSPACE"/get_files/product
+get_prop_files() {
+  get_system_files "/system/build.prop"
+  get_system_files "/vendor/build.prop"
+  get_system_files "/system_ext/etc/build.prop"
+  get_system_files "/odm/etc/build.prop"
+  get_system_files "/product/etc/build.prop"
+  if [ -f "$GITHUB_WORKSPACE"/"$device"/mi_ext/etc/build.prop ]; then
+    get_system_files "/mi_ext/etc/build.prop"
+  elif [ -f "$GITHUB_WORKSPACE"/"$device"/mi_ext/build.prop ]; then
+    get_system_files "/mi_ext/build.prop"
+  fi
 }
 
 extract_files() {
   cp "$GITHUB_WORKSPACE"/info.txt "$GITHUB_WORKSPACE"/get_files
-  get_prop_files
-  get_files_config
+  
+  # get_files_config
+  # get_prop_files
+
+  ### device_features
+  get_system_files "/product/etc/device_features"
+
+  ### overlay
+  # get_system_files "/mi_ext/product/overlay"
+  # get_system_files "/odm/overlay"
+  # get_system_files "/product/overlay"
+  # get_system_files "/vendor/overlay"
+
+  ### 设置
+  # get_system_files "/system_ext/priv-app/Settings"
+  get_system_files "/system_ext/priv-app/Settings/Settings.apk"
+
+  ### MiuiSystemUI
+  # get_system_files "/system_ext/priv-app/MiuiSystemUI"
+  get_system_files "/system_ext/priv-app/MiuiSystemUI/MiuiSystemUI.apk"
+
+  ### 相机
+  # get_system_files "/product/priv-app/MiuiCamera"
+  get_system_files "/product/priv-app/MiuiCamera/MiuiCamera.apk"
 }

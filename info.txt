@@ -1,2 +1,3 @@
-获取各分区的prop
-获取config文件夹
+提取 相机
+提取 MiuiSystemUI
+提取 MiuiCamera
