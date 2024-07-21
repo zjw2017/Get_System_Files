@@ -1,6 +1,8 @@
 #!/bin/bash
 # shellcheck disable=SC2034
 # shellcheck disable=SC2154
+# shellcheck disable=SC2164
+# shellcheck disable=SC2181
 
 # 适用于出厂安卓13的机型
 unpack_partiton="system odm system_ext product vendor mi_ext system_dlkm vendor_dlkm"
@@ -43,6 +45,27 @@ get_prop_files() {
   fi
 }
 
+unpack_vendor_boot() {
+  mkdir -p "$GITHUB_WORKSPACE"/"$device"/vendor_boot
+  cd "$GITHUB_WORKSPACE"/"$device"/vendor_boot
+  "$GITHUB_WORKSPACE"/tools/magiskboot unpack -h "$GITHUB_WORKSPACE"/"$device"/vendor_boot.img
+  comp=$("$GITHUB_WORKSPACE"/tools/magiskboot decompress ramdisk.cpio 2>&1 | grep -v 'raw' | sed -n 's;.*\[\(.*\)\];\1;p')
+  if [ "$comp" ]; then
+    mv -f ramdisk.cpio ramdisk.cpio."$comp"
+    "$GITHUB_WORKSPACE"/tools/magiskboot decompress ramdisk.cpio."$comp" ramdisk.cpio
+    rm -rf ramdisk.cpio."$comp"
+    if [ $? != 0 ] && $comp --help 2>/dev/null; then
+      $comp -dc ramdisk.cpio."$comp" >ramdisk.cpio
+    fi
+  fi
+  mkdir -p ramdisk
+  chmod 755 ramdisk
+  cd ramdisk
+  EXTRACT_UNSAFE_SYMLINKS=1 cpio -d -F ../ramdisk.cpio -i
+  rm -rf ../ramdisk.cpio
+  cd "$GITHUB_WORKSPACE"
+}
+
 extract_files() {
   cp "$GITHUB_WORKSPACE"/info.txt "$GITHUB_WORKSPACE"/get_files
   
@@ -69,4 +92,13 @@ extract_files() {
   ### 相机
   # get_system_files "/product/priv-app/MiuiCamera"
   get_system_files "/product/priv-app/MiuiCamera/MiuiCamera.apk"
+
+  ### zram.ko
+  get_system_files "/vendor_boot/ramdisk/lib/modules/zram.ko"
+
+  ### zsmalloc.ko
+  get_system_files "/vendor_boot/ramdisk/lib/modules/zsmalloc.ko"
+
+  ### dtb
+  get_system_files "/vendor_boot/dtb"
 }

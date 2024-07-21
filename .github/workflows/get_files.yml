@@ -70,6 +70,9 @@ jobs:
             fi
             rm -rf "$GITHUB_WORKSPACE"/$device/$i.img
           done
+          "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/$device/ -p vendor_boot "$GITHUB_WORKSPACE"/$device/payload.bin >/dev/null
+          unpack_vendor_boot
+          rm -rf "$GITHUB_WORKSPACE"/$device/payload.bin
       - if: ${{ env.unpack == 'br' }}
         name: 解压br
         run: |
@@ -103,6 +106,8 @@ jobs:
             rm -rf "$GITHUB_WORKSPACE"/$device/$i.img
           done
           rm -rf "$GITHUB_WORKSPACE"/$device/super.img
+          mv "$GITHUB_WORKSPACE"/$device/images/vendor_boot.img "$GITHUB_WORKSPACE"/$device/vendor_boot.img
+          unpack_vendor_boot
       - name: 提取指定文件
         run: |
           source unpack.sh

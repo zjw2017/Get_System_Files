@@ -1,3 +1,6 @@
 提取 相机
 提取 MiuiSystemUI
 提取 MiuiCamera
+提取 dtb
+提取 zram.ko
+提取 zsmalloc.ko
