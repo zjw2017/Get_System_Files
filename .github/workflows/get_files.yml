@@ -120,7 +120,7 @@ jobs:
           mv "$GITHUB_WORKSPACE"/zip/"$device"_get_files.zip "$GITHUB_WORKSPACE"/zip/"$device"_"$version"_"$(date +"%Y-%m-%d_%H%M%S")".zip
           cd "$GITHUB_WORKSPACE"
       - name: 上传到Github Release
-        uses: ncipollo/release-action@main
+        uses: ncipollo/release-action@v1.14.0
         with:
           artifacts: ${{ github.workspace }}/zip/*
           name: ${{ env.device }}
