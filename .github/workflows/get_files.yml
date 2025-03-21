@@ -17,16 +17,9 @@ jobs:
           if [[ "$URL" == *"CNXM"* ]]; then
             URL="${URL/http:\/\/cdnorg.d.miui.com/https:\/\/bkt-sgp-miui-ota-update-alisgp.oss-ap-southeast-1.aliyuncs.com}"
           fi
-          if [[ "$URL" == *"images"* ]]; then
-            device=$(echo "$URL" | cut -d"/" -f5 | cut -d"_" -f1)
-            ZIP_NAME=$(echo "$URL" | cut -d"/" -f5)
-          else
-            device=$(echo "$URL" | cut -d"_" -f2)
-            ZIP_NAME=$(echo "$URL" | sed 's/.*\(miui_.*\.zip\).*/\1/')
-          fi
-          echo "device=${device,,}" >> $GITHUB_ENV
-          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
-          echo "version=$(echo "$URL" | cut -d"/" -f4)" >> $GITHUB_ENV
+          echo "device=$(echo $URL | cut -d"?" -f1 | cut -d"/" -f5 | cut -d"-" -f1)" >> $GITHUB_ENV
+          echo "ZIP_NAME=$(echo $URL | cut -d"?" -f1 | cut -d"/" -f5)" >> $GITHUB_ENV
+          echo "version=$(echo $URL | cut -d"?" -f1 | cut -d"/" -f4)" >> $GITHUB_ENV
           sudo apt install aria2 p7zip-full tar
           mkdir -p "$GITHUB_WORKSPACE"/get_files
           sudo chmod -R 777 "$GITHUB_WORKSPACE"/tools
@@ -39,26 +32,11 @@ jobs:
           URL: ${{ inputs.URL }}
       - name: 检测payload/br/线刷包
         run: |
-          if [[ "$ZIP_NAME" == *"images"* ]]; then
-            tar xvzf $ZIP_NAME -C "$GITHUB_WORKSPACE"
-            unpack_path="$(find "$GITHUB_WORKSPACE" -type d -name "*_images*")"
-            mv "$unpack_path" "$GITHUB_WORKSPACE"/$device
-          else
-            7z x "$GITHUB_WORKSPACE"/$ZIP_NAME -r -o"$GITHUB_WORKSPACE"/$device
-          fi
+          7z x "$GITHUB_WORKSPACE"/$ZIP_NAME -r -o"$GITHUB_WORKSPACE"/$device
           rm -rf "$GITHUB_WORKSPACE"/$ZIP_NAME
-          if [[ -e "$GITHUB_WORKSPACE"/$device/payload.bin ]]; then
-            echo "unpack=payload" >> $GITHUB_ENV
-          else
-            echo "unpack=br" >> $GITHUB_ENV
-          fi
-          if [[ "$ZIP_NAME" == *"images"* ]]; then
-            echo "unpack=flash" >> $GITHUB_ENV
-          fi
         env:
           URL: ${{ inputs.URL }}
-      - if: ${{ env.unpack == 'payload' }}
-        name: 解压payload
+      - name: 解压payload
         run: |
           source unpack.sh
           for i in $unpack_partiton; do
@@ -70,44 +48,7 @@ jobs:
             fi
             rm -rf "$GITHUB_WORKSPACE"/$device/$i.img
           done
-          "$GITHUB_WORKSPACE"/tools/payload-dumper-go -o "$GITHUB_WORKSPACE"/$device/ -p vendor_boot "$GITHUB_WORKSPACE"/$device/payload.bin >/dev/null
-          unpack_vendor_boot
           rm -rf "$GITHUB_WORKSPACE"/$device/payload.bin
-      - if: ${{ env.unpack == 'br' }}
-        name: 解压br
-        run: |
-          source unpack.sh
-          for i in $unpack_partiton; do
-            "$GITHUB_WORKSPACE"/tools/brotli -d "$GITHUB_WORKSPACE"/$device/$i.new.dat.br >/dev/null
-            rm -rf "$GITHUB_WORKSPACE"/$device/$i.new.dat.br
-            "$GITHUB_WORKSPACE"/tools/sdat2img "$GITHUB_WORKSPACE"/$device/$i.transfer.list "$GITHUB_WORKSPACE"/$device/$i.new.dat "$GITHUB_WORKSPACE"/$device/$i.img >/dev/null
-            rm -rf "$GITHUB_WORKSPACE"/$device/$i.patch.dat "$GITHUB_WORKSPACE"/$device/$i.transfer.list "$GITHUB_WORKSPACE"/$device/$i.new.dat
-            if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "ext" ]]; then
-              sudo "$GITHUB_WORKSPACE"/tools/imgextractorLinux "$GITHUB_WORKSPACE"/$device/$i.img "$GITHUB_WORKSPACE"/$device >/dev/null
-            elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "erofs" ]]; then
-              cd "$GITHUB_WORKSPACE"/$device && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/$device/$i.img -x >/dev/null && cd "$GITHUB_WORKSPACE"
-            fi
-            rm -rf "$GITHUB_WORKSPACE"/$device/$i.img
-          done
-      - if: ${{ env.unpack == 'flash' }}
-        name: 解压线刷包
-        run: |
-          source unpack.sh
-          "$GITHUB_WORKSPACE"/tools/simg2img "$GITHUB_WORKSPACE"/$device/images/super.img "$GITHUB_WORKSPACE"/$device/super.img
-          rm -rf "$GITHUB_WORKSPACE"/$device/images/super.img
-          for i in $unpack_partiton; do
-            "$GITHUB_WORKSPACE"/tools/lpunpack -p "$i"_a "$GITHUB_WORKSPACE"/$device/super.img "$GITHUB_WORKSPACE"/$device
-            mv "$GITHUB_WORKSPACE"/$device/"$i"_a.img "$GITHUB_WORKSPACE"/$device/"$i".img
-            if [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "ext" ]]; then
-              sudo "$GITHUB_WORKSPACE"/tools/imgextractorLinux "$GITHUB_WORKSPACE"/$device/$i.img "$GITHUB_WORKSPACE"/$device >/dev/null
-            elif [[ $("$GITHUB_WORKSPACE"/tools/gettype -i "$GITHUB_WORKSPACE"/$device/$i.img) == "erofs" ]]; then
-              cd "$GITHUB_WORKSPACE"/$device && "$GITHUB_WORKSPACE"/tools/extract.erofs -i "$GITHUB_WORKSPACE"/$device/$i.img -x >/dev/null && cd "$GITHUB_WORKSPACE"
-            fi
-            rm -rf "$GITHUB_WORKSPACE"/$device/$i.img
-          done
-          rm -rf "$GITHUB_WORKSPACE"/$device/super.img
-          mv "$GITHUB_WORKSPACE"/$device/images/vendor_boot.img "$GITHUB_WORKSPACE"/$device/vendor_boot.img
-          unpack_vendor_boot
       - name: 提取指定文件
         run: |
           source unpack.sh
