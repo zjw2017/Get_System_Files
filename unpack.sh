@@ -7,10 +7,10 @@
 # 适用于出厂安卓13的机型
 # unpack_partiton="system odm system_ext product vendor mi_ext system_dlkm vendor_dlkm"
 # 适用于升级到安卓13的机型
-# unpack_partiton="system odm system_ext product vendor mi_ext"
+unpack_partiton="system odm system_ext product vendor mi_ext"
 # 适用于没有官方安卓13的机型
 # unpack_partiton="system odm system_ext product vendor"
-unpack_partiton=product
+# unpack_partiton=product
 
 get_files_config() {
   mkdir -p "$GITHUB_WORKSPACE"/get_files/config
@@ -70,35 +70,35 @@ unpack_vendor_boot() {
 extract_files() {
   cp "$GITHUB_WORKSPACE"/info.txt "$GITHUB_WORKSPACE"/get_files
 
-  ### device_features
-  get_system_files "/product/etc/device_features"
+  # ### device_features
+  # get_system_files "/product/etc/device_features"
 
-  ### 相机
-  get_system_files "/product/priv-app/MiuiCamera/MiuiCamera.apk"
-  7z a "$GITHUB_WORKSPACE"/get_files/MiuiCamera.zip "$GITHUB_WORKSPACE"/get_files/product/priv-app/MiuiCamera/*
-  rm -rf "$GITHUB_WORKSPACE"/get_files/product/priv-app
+  # ### 相机
+  # get_system_files "/product/priv-app/MiuiCamera/MiuiCamera.apk"
+  # 7z a "$GITHUB_WORKSPACE"/get_files/MiuiCamera.zip "$GITHUB_WORKSPACE"/get_files/product/priv-app/MiuiCamera/*
+  # rm -rf "$GITHUB_WORKSPACE"/get_files/product/priv-app
 
-  ### MiuiCit
-  get_system_files "/product/app/MiuiCit/MiuiCit.apk"
+  # ### MiuiCit
+  # get_system_files "/product/app/MiuiCit/MiuiCit.apk"
 
-  ### MiuiSubScreenUi if exist
-  if [ -d "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiSubScreenUi ]; then
-    get_system_files "/product/app/MiuiSubScreenUi/MiuiSubScreenUi.apk"
-  fi
+  # ### MiuiSubScreenUi if exist
+  # if [ -d "$GITHUB_WORKSPACE"/"$device"/product/app/MiuiSubScreenUi ]; then
+  #   get_system_files "/product/app/MiuiSubScreenUi/MiuiSubScreenUi.apk"
+  # fi
 
-  ### overlay
-  get_system_files "/product/overlay/AospFrameworkResOverlay.apk"
-  get_system_files "/product/overlay/DevicesAndroidOverlay.apk"
-  get_system_files "/product/overlay/DevicesOverlay.apk"
-  get_system_files "/product/overlay/MiuiFrameworkResOverlay.apk"
-  get_system_files "/product/overlay/MiuiFrameworkTelephonyResOverlay.apk"
-  get_system_files "/product/overlay/SettingsRroDeviceHideStatusBarOverlay.apk"
-  get_system_files "/product/overlay/SettingsRroDeviceTypeOverlay.apk"
-  7z a "$GITHUB_WORKSPACE"/get_files/overlay.zip "$GITHUB_WORKSPACE"/get_files/product/overlay/*
-  rm -rf "$GITHUB_WORKSPACE"/get_files/product/overlay
+  # ### overlay
+  # get_system_files "/product/overlay/AospFrameworkResOverlay.apk"
+  # get_system_files "/product/overlay/DevicesAndroidOverlay.apk"
+  # get_system_files "/product/overlay/DevicesOverlay.apk"
+  # get_system_files "/product/overlay/MiuiFrameworkResOverlay.apk"
+  # get_system_files "/product/overlay/MiuiFrameworkTelephonyResOverlay.apk"
+  # get_system_files "/product/overlay/SettingsRroDeviceHideStatusBarOverlay.apk"
+  # get_system_files "/product/overlay/SettingsRroDeviceTypeOverlay.apk"
+  # 7z a "$GITHUB_WORKSPACE"/get_files/overlay.zip "$GITHUB_WORKSPACE"/get_files/product/overlay/*
+  # rm -rf "$GITHUB_WORKSPACE"/get_files/product/overlay
 
   # get_files_config
-  # get_prop_files
+  get_prop_files
 
   ### overlay
   # get_system_files "/mi_ext/product/overlay"

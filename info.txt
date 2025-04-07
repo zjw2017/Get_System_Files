@@ -1,5 +1,1 @@
-提取 device_features
-提取 MiuiCamera
-提取 MiuiCit
-提取 MiuiSubScreenUi(如果有)
-提取 overlay
+提取 props
